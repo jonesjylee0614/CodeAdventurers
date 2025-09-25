@@ -70,7 +70,11 @@ function evaluateCondition(
 }
 
 export class LevelSimulator {
-  constructor(private readonly level: LevelDefinition) {}
+  private readonly level: LevelDefinition;
+  
+  constructor(level: LevelDefinition) {
+    this.level = level;
+  }
 
   run(program: Instruction[], options: SimulationOptions = {}): SimulationResult {
     const stepLimit = options.stepLimit ?? this.level.goal.stepLimit ?? 200;
