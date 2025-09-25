@@ -1,4 +1,5 @@
-import { LevelDefinition } from '../../../packages/engine/src/index.ts';
+import * as Engine from '../../../packages/engine/src/index.ts';
+type LevelDefinition = Engine.LevelDefinition;
 import {
   AdminProfile,
   ClassDefinition,

@@ -1,5 +1,9 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { LevelSimulator, Instruction, computeHint, HintPayload } from '../../../packages/engine/src/index.ts';
+import * as Engine from '../../../packages/engine/src/index.ts';
+const LevelSimulator = Engine.LevelSimulator;
+const computeHint = Engine.computeHint;
+type Instruction = Engine.Instruction;
+type HintPayload = Engine.HintPayload;
 import { TelemetryBuffer } from './telemetry.ts';
 import { ensureSandboxUnlock, seedData } from './seed.ts';
 import {
