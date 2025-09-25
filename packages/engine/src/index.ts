@@ -1,13 +1,68 @@
-import * as Types from './types.ts';
+// 直接定义类型，避免导入问题
+export type Direction = 'north' | 'south' | 'east' | 'west';
 
-type Condition = Types.Condition;
-type Direction = Types.Direction;
-type ErrorCode = Types.ErrorCode;
-type Instruction = Types.Instruction;
-type LevelDefinition = Types.LevelDefinition;
-type SimulationOptions = Types.SimulationOptions;
-type SimulationResult = Types.SimulationResult;
-type SimulationStep = Types.SimulationStep;
+export interface Tile {
+  x: number;
+  y: number;
+  walkable: boolean;
+  collectible?: string;
+}
+
+export interface LevelGoal {
+  collectibles?: number;
+  reach?: { x: number; y: number };
+  stepLimit?: number;
+}
+
+export interface LevelDefinition {
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  tiles: Tile[];
+  start: { x: number; y: number; facing: Direction };
+  goal: LevelGoal;
+  bestSteps: number;
+  hints: string[];
+}
+
+export type Condition =
+  | { type: 'tile-ahead-walkable' }
+  | { type: 'collectibles-remaining' };
+
+export type Instruction =
+  | { type: 'move' }
+  | { type: 'turn'; direction: 'left' | 'right' }
+  | { type: 'collect' }
+  | { type: 'repeat'; times: number; body: Instruction[] }
+  | { type: 'conditional'; condition: Condition; truthy: Instruction[]; falsy?: Instruction[] };
+
+export interface SimulationOptions {
+  stepLimit?: number;
+  captureLog?: boolean;
+}
+
+export type ErrorCode = 'E_COLLIDE' | 'E_GOAL_NOT_MET' | 'E_STEP_LIMIT' | 'E_LOOP_DEPTH';
+
+export interface SimulationStep {
+  index: number;
+  instruction: Instruction;
+  position: { x: number; y: number; facing: Direction };
+  collectibles: number;
+}
+
+export interface SimulationResult {
+  success: boolean;
+  steps: number;
+  stars: number;
+  errorCode?: ErrorCode;
+  remainingCollectibles?: number;
+  log: SimulationStep[];
+  metadata: {
+    bestSteps: number;
+    goal: LevelGoal;
+  };
+}
 
 const directionOrder: Direction[] = ['north', 'east', 'south', 'west'];
 
@@ -231,5 +286,4 @@ export function computeHint(level: LevelDefinition, payload: HintPayload): strin
   return level.hints[Math.min(payload.attempts, level.hints.length - 1)] ?? '检查一下积木的顺序。';
 }
 
-export * from './types.ts';
-export type { Condition, Direction, ErrorCode, Instruction, LevelDefinition, SimulationOptions, SimulationResult, SimulationStep };
+// 所有类型现在直接在此文件中定义和导出
