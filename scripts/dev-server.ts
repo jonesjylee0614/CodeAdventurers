@@ -1,4 +1,4 @@
-import { createServer } from '../services/api/src/index.js';
+import { createServer } from '../services/api/src/index.ts';
 
 const port = Number(process.env.PORT ?? 3000);
 
