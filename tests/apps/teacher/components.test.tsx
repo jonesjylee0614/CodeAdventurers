@@ -2,7 +2,9 @@
 import React from 'react';
 import { jest } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
-import { Heatmap, ReplayViewer } from '@teacher/components';
+import * as TeacherComponents from '../apps/teacher/src/components.tsx';
+const Heatmap = TeacherComponents.Heatmap;
+const ReplayViewer = TeacherComponents.ReplayViewer;
 
 describe('Teacher components', () => {
   it('renders heatmap table', () => {

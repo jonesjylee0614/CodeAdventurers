@@ -2,7 +2,9 @@
  * @jest-environment node
  */
 import request from 'supertest';
-import { createServer, ServerInstance } from '@api/index';
+import * as ApiModule from '../services/api/src/index.ts';
+const createServer = ApiModule.createServer;
+type ServerInstance = ApiModule.ServerInstance;
 
 let server: ServerInstance;
 let app: Parameters<typeof request>[0];

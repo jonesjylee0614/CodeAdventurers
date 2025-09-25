@@ -4,25 +4,27 @@ const LevelSimulator = Engine.LevelSimulator;
 const computeHint = Engine.computeHint;
 type Instruction = Engine.Instruction;
 type HintPayload = Engine.HintPayload;
-import { TelemetryBuffer } from './telemetry.ts';
-import { ensureSandboxUnlock, seedData } from './seed.ts';
-import {
-  AdminProfile,
-  ClassDefinition,
-  CourseDefinition,
-  DataContext,
-  ExportRecord,
-  ParentProfile,
-  Role,
-  SandboxProject,
-  StudentProfile,
-  StudentProgressRecord,
-  TeacherProfile,
-  UserProfile,
-  WeeklyReport,
-  WorkSubmission,
-  createDataContext
-} from './store.ts';
+import * as TelemetryModule from './telemetry.ts';
+import * as SeedModule from './seed.ts';
+const TelemetryBuffer = TelemetryModule.TelemetryBuffer;
+const ensureSandboxUnlock = SeedModule.ensureSandboxUnlock;
+const seedData = SeedModule.seedData;
+import * as StoreModule from './store.ts';
+type AdminProfile = StoreModule.AdminProfile;
+type ClassDefinition = StoreModule.ClassDefinition;
+type CourseDefinition = StoreModule.CourseDefinition;
+type DataContext = StoreModule.DataContext;
+type ExportRecord = StoreModule.ExportRecord;
+type ParentProfile = StoreModule.ParentProfile;
+type Role = StoreModule.Role;
+type SandboxProject = StoreModule.SandboxProject;
+type StudentProfile = StoreModule.StudentProfile;
+type StudentProgressRecord = StoreModule.StudentProgressRecord;
+type TeacherProfile = StoreModule.TeacherProfile;
+type UserProfile = StoreModule.UserProfile;
+type WeeklyReport = StoreModule.WeeklyReport;
+type WorkSubmission = StoreModule.WorkSubmission;
+const createDataContext = StoreModule.createDataContext;
 
 interface RequestWithUser extends Request {
   user?: UserProfile;

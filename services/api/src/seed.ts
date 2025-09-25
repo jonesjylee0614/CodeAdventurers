@@ -1,15 +1,14 @@
 import * as Engine from '../../../packages/engine/src/index.ts';
 type LevelDefinition = Engine.LevelDefinition;
-import {
-  AdminProfile,
-  ClassDefinition,
-  CompendiumEntry,
-  CourseDefinition,
-  DataContext,
-  StudentProfile,
-  TeacherProfile,
-  WeeklyReport
-} from './store.ts';
+import * as StoreModule from './store.ts';
+type AdminProfile = StoreModule.AdminProfile;
+type ClassDefinition = StoreModule.ClassDefinition;
+type CompendiumEntry = StoreModule.CompendiumEntry;
+type CourseDefinition = StoreModule.CourseDefinition;
+type DataContext = StoreModule.DataContext;
+type StudentProfile = StoreModule.StudentProfile;
+type TeacherProfile = StoreModule.TeacherProfile;
+type WeeklyReport = StoreModule.WeeklyReport;
 
 export interface SeedOptions {
   now?: number;

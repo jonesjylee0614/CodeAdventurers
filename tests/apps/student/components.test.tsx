@@ -2,8 +2,14 @@
 import React from 'react';
 import { jest } from '@jest/globals';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { AdventureMap, HintModal, LevelCard, ResultSummary } from '@student/components';
-import type { LevelDefinition, SimulationResult } from '@engine/index';
+import * as StudentComponents from '../apps/student/src/components.tsx';
+const AdventureMap = StudentComponents.AdventureMap;
+const HintModal = StudentComponents.HintModal;
+const LevelCard = StudentComponents.LevelCard;
+const ResultSummary = StudentComponents.ResultSummary;
+import * as Engine from '../packages/engine/src/index.ts';
+type LevelDefinition = Engine.LevelDefinition;
+type SimulationResult = Engine.SimulationResult;
 
 const level: LevelDefinition = {
   id: 'sample-1',

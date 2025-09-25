@@ -1,5 +1,7 @@
 import React from 'react';
-import type { LevelDefinition, SimulationResult } from '@engine/index';
+import * as Engine from '../../../packages/engine/src/index.ts';
+type LevelDefinition = Engine.LevelDefinition;
+type SimulationResult = Engine.SimulationResult;
 
 export interface LevelCardProps {
   level: LevelDefinition;

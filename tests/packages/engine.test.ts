@@ -1,4 +1,8 @@
-import { LevelDefinition, LevelSimulator, computeHint, Instruction } from '@engine/index';
+import * as Engine from '../packages/engine/src/index.ts';
+type LevelDefinition = Engine.LevelDefinition;
+const LevelSimulator = Engine.LevelSimulator;
+const computeHint = Engine.computeHint;
+type Instruction = Engine.Instruction;
 
 const level: LevelDefinition = {
   id: 'sample-1',
