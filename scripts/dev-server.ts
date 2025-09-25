@@ -1,4 +1,4 @@
-import { createServer } from '../services/api/src/index.js';
+import { createServer } from '../services/api/src/index.ts';
 
 declare const process: {
   env: Record<string, string | undefined>;
