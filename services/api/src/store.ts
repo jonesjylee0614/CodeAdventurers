@@ -234,7 +234,13 @@ class InMemoryEntityStore<T> implements EntityStore<T> {
 }
 
 class MySqlEntityStore<T> implements EntityStore<T> {
-  constructor(private readonly pool: Pool, private readonly table: string) {}
+  private readonly pool: Pool;
+  private readonly table: string;
+  
+  constructor(pool: Pool, table: string) {
+    this.pool = pool;
+    this.table = table;
+  }
 
   async get(id: string): Promise<T | undefined> {
     const [rows] = await this.pool.query<RowDataPacket[]>(`SELECT data FROM \`${this.table}\` WHERE id = ? LIMIT 1`, [id]);
