@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import * as React from 'react';
 import * as Engine from '../../../packages/engine/src/index.ts';
 type LevelDefinition = Engine.LevelDefinition;
 type SimulationResult = Engine.SimulationResult;
@@ -360,8 +360,8 @@ export const HintModal: React.FC<HintModalProps> = ({ hint, onClose, isVisible }
           收到提示
         </button>
       </div>
-    </div>
-  );
+  </div>
+);
 };
 
 export interface AdventureMapProps {
@@ -379,7 +379,7 @@ export interface AdventureMapProps {
 }
 
 export const AdventureMap: React.FC<AdventureMapProps> = ({ chapters, onSelect }) => {
-  const [selectedChapter, setSelectedChapter] = useState(0);
+  const [selectedChapter, setSelectedChapter] = React.useState(0);
 
   return (
     <div className="adventure-map">

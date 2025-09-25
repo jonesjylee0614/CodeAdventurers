@@ -29,7 +29,7 @@
     "apps/**/*.tsx",
     "tests/**/*.ts",
     "tests/**/*.tsx",
-    "scripts/**/*.ts"
-
+    "scripts/**/*.ts",
+    "global.d.ts"
   ]
 }

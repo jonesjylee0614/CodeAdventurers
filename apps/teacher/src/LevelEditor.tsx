@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import * as React from 'react';
 import * as Engine from '../../../packages/engine/src/index.ts';
 
 type LevelDefinition = Engine.LevelDefinition;
@@ -18,7 +18,7 @@ export const LevelEditor: React.FC<LevelEditorProps> = ({
   onSave, 
   onCancel 
 }) => {
-  const [level, setLevel] = useState<Partial<LevelDefinition>>({
+  const [level, setLevel] = React.useState<Partial<LevelDefinition>>({
     id: '',
     name: '新关卡',
     width: 8,
@@ -31,21 +31,21 @@ export const LevelEditor: React.FC<LevelEditorProps> = ({
     ...initialLevel
   });
 
-  const [selectedTool, setSelectedTool] = useState<EditorTool>('walkable');
-  const [isDrawing, setIsDrawing] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [selectedTool, setSelectedTool] = React.useState<EditorTool>('walkable');
+  const [isDrawing, setIsDrawing] = React.useState(false);
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
   const CELL_SIZE = 50;
   const CANVAS_WIDTH = (level.width || 8) * CELL_SIZE;
   const CANVAS_HEIGHT = (level.height || 6) * CELL_SIZE;
 
   // 获取指定位置的瓦片
-  const getTileAt = useCallback((x: number, y: number): Tile | undefined => {
+  const getTileAt = React.useCallback((x: number, y: number): Tile | undefined => {
     return level.tiles?.find(tile => tile.x === x && tile.y === y);
   }, [level.tiles]);
 
   // 设置瓦片
-  const setTileAt = useCallback((x: number, y: number, tileData: Partial<Tile>) => {
+  const setTileAt = React.useCallback((x: number, y: number, tileData: Partial<Tile>) => {
     setLevel(prev => {
       const tiles = prev.tiles || [];
       const existingIndex = tiles.findIndex(tile => tile.x === x && tile.y === y);
@@ -69,7 +69,7 @@ export const LevelEditor: React.FC<LevelEditorProps> = ({
   }, []);
 
   // 删除瓦片
-  const removeTileAt = useCallback((x: number, y: number) => {
+  const removeTileAt = React.useCallback((x: number, y: number) => {
     setLevel(prev => ({
       ...prev,
       tiles: (prev.tiles || []).filter(tile => !(tile.x === x && tile.y === y))
@@ -77,7 +77,7 @@ export const LevelEditor: React.FC<LevelEditorProps> = ({
   }, []);
 
   // 绘制关卡场景
-  const drawLevel = useCallback((ctx: CanvasRenderingContext2D) => {
+  const drawLevel = React.useCallback((ctx: CanvasRenderingContext2D) => {
     // 清空画布
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
@@ -177,7 +177,7 @@ export const LevelEditor: React.FC<LevelEditorProps> = ({
   }, [level, getTileAt, CANVAS_WIDTH, CANVAS_HEIGHT, CELL_SIZE]);
 
   // 处理画布点击
-  const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleCanvasClick = React.useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -434,7 +434,7 @@ export const LevelEditor: React.FC<LevelEditorProps> = ({
           <input
             type="text"
             value={level.id || ''}
-            onChange={(e) => setLevel(prev => ({ ...prev, id: e.target.value }))}
+            onChange={(e: any) => setLevel((prev: any) => ({ ...prev, id: e.target.value }))}
             placeholder="level-001"
           />
         </div>
@@ -444,7 +444,7 @@ export const LevelEditor: React.FC<LevelEditorProps> = ({
           <input
             type="text"
             value={level.name || ''}
-            onChange={(e) => setLevel(prev => ({ ...prev, name: e.target.value }))}
+            onChange={(e: any) => setLevel((prev: any) => ({ ...prev, name: e.target.value }))}
             placeholder="第一关"
           />
         </div>
@@ -455,7 +455,7 @@ export const LevelEditor: React.FC<LevelEditorProps> = ({
             <input
               type="number"
               value={level.width || 8}
-              onChange={(e) => setLevel(prev => ({ ...prev, width: parseInt(e.target.value) || 8 }))}
+              onChange={(e: any) => setLevel((prev: any) => ({ ...prev, width: parseInt(e.target.value) || 8 }))}
               placeholder="宽度"
               min="3"
               max="20"
@@ -463,7 +463,7 @@ export const LevelEditor: React.FC<LevelEditorProps> = ({
             <input
               type="number"
               value={level.height || 6}
-              onChange={(e) => setLevel(prev => ({ ...prev, height: parseInt(e.target.value) || 6 }))}
+              onChange={(e: any) => setLevel((prev: any) => ({ ...prev, height: parseInt(e.target.value) || 6 }))}
               placeholder="高度"
               min="3"
               max="15"
@@ -476,7 +476,7 @@ export const LevelEditor: React.FC<LevelEditorProps> = ({
           <input
             type="number"
             value={level.bestSteps || 10}
-            onChange={(e) => setLevel(prev => ({ ...prev, bestSteps: parseInt(e.target.value) || 10 }))}
+            onChange={(e: any) => setLevel((prev: any) => ({ ...prev, bestSteps: parseInt(e.target.value) || 10 }))}
             min="1"
           />
         </div>
@@ -533,9 +533,9 @@ export const LevelEditor: React.FC<LevelEditorProps> = ({
           <label>提示文本 (每行一个)</label>
           <textarea
             value={(level.hints || []).join('\n')}
-            onChange={(e) => setLevel(prev => ({
+            onChange={(e: any) => setLevel((prev: any) => ({
               ...prev,
-              hints: e.target.value.split('\n').filter(h => h.trim())
+              hints: e.target.value.split('\n').filter((h: string) => h.trim())
             }))}
             placeholder="尝试向前移动&#10;检查路径是否正确&#10;使用重复积木优化步数"
           />

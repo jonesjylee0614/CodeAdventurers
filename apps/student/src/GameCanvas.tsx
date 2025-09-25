@@ -39,7 +39,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   const CANVAS_HEIGHT = level.height * CELL_SIZE;
 
   // 绘制游戏场景
-  const drawScene = useCallback((ctx: CanvasRenderingContext2D, position: Position, collected: Set<string>) => {
+  const drawScene = React.useCallback((ctx: CanvasRenderingContext2D, position: Position, collected: Set<string>) => {
     // 清空画布
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
@@ -168,7 +168,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   }, [level, simulationResult, currentStep, CANVAS_WIDTH, CANVAS_HEIGHT, CELL_SIZE]);
 
   // 播放动画
-  useEffect(() => {
+  React.useEffect(() => {
     if (!isPlaying || !simulationResult || simulationResult.log.length === 0) {
       return;
     }
@@ -205,7 +205,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   }, [isPlaying, simulationResult, playbackSpeed, level.tiles]);
 
   // 重置到初始状态
-  const resetToStart = useCallback(() => {
+  const resetToStart = React.useCallback(() => {
     setCurrentStep(0);
     setPlayerPosition({
       x: level.start.x,
@@ -216,7 +216,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   }, [level.start]);
 
   // 绘制场景
-  useEffect(() => {
+  React.useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -227,7 +227,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   }, [drawScene, playerPosition, collectedItems]);
 
   // 当关卡改变时重置
-  useEffect(() => {
+  React.useEffect(() => {
     resetToStart();
   }, [level, resetToStart]);
 

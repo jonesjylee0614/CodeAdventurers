@@ -41,7 +41,7 @@ interface BlockEditorProps {
   onReset: () => void;
 }
 
-export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset }) => {
+export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset }: BlockEditorProps) => {
   const [programBlocks, setProgramBlocks] = React.useState<ProgramBlock[]>([]);
   const [draggedBlock, setDraggedBlock] = React.useState<BlockType | null>(null);
   const [isRunning, setIsRunning] = React.useState(false);
@@ -103,7 +103,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
       children: draggedBlock.category === 'control' ? [] : undefined
     };
 
-    setProgramBlocks(prev => [...prev, newBlock]);
+    setProgramBlocks((prev: ProgramBlock[]) => [...prev, newBlock]);
     setDraggedBlock(null);
   }, [draggedBlock]);
 
@@ -130,7 +130,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
 
   // 删除积木
   const removeBlock = (blockId: string) => {
-    setProgramBlocks(prev => prev.filter(block => block.id !== blockId));
+    setProgramBlocks((prev: ProgramBlock[]) => prev.filter((block: ProgramBlock) => block.id !== blockId));
   };
 
   return (
@@ -363,15 +363,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
       <div
         ref={programAreaRef}
         className={`program-area ${draggedBlock ? 'drag-over' : ''}`}
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={handleDrop}
+        onDragOver={(e: React.DragEvent) => e.preventDefault()}
+        onDrop={(e: React.DragEvent) => handleDrop(e)}
       >
         {programBlocks.length === 0 ? (
           <div className="empty-program">
             拖拽积木到这里开始编程 🧩
           </div>
         ) : (
-          programBlocks.map(block => (
+          programBlocks.map((block: ProgramBlock) => (
             <div
               key={block.id}
               className="program-block"
