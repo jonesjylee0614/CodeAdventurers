@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import * as React from 'react';
 import * as Engine from '../../../packages/engine/src/index.ts';
 
 type Instruction = Engine.Instruction;
@@ -42,14 +42,14 @@ interface BlockEditorProps {
 }
 
 export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset }) => {
-  const [programBlocks, setProgramBlocks] = useState<ProgramBlock[]>([]);
-  const [draggedBlock, setDraggedBlock] = useState<BlockType | null>(null);
-  const [isRunning, setIsRunning] = useState(false);
-  const [result, setResult] = useState<SimulationResult | null>(null);
-  const programAreaRef = useRef<HTMLDivElement>(null);
+  const [programBlocks, setProgramBlocks] = React.useState<ProgramBlock[]>([]);
+  const [draggedBlock, setDraggedBlock] = React.useState<BlockType | null>(null);
+  const [isRunning, setIsRunning] = React.useState(false);
+  const [result, setResult] = React.useState<SimulationResult | null>(null);
+  const programAreaRef = React.useRef<HTMLDivElement>(null);
 
   // 从积木块生成指令程序
-  const blocksToProgram = useCallback((blocks: ProgramBlock[]): Instruction[] => {
+  const blocksToProgram = React.useCallback((blocks: ProgramBlock[]): Instruction[] => {
     return blocks.map(block => {
       switch (block.blockType.type) {
         case 'move':
@@ -86,7 +86,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
   };
 
   // 处理放置到程序区
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = React.useCallback((e: React.DragEvent) => {
     e.preventDefault();
     if (!draggedBlock || !programAreaRef.current) return;
 

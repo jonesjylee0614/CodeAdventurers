@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import * as React from 'react';
 import * as Engine from '../../../packages/engine/src/index.ts';
 
 type LevelDefinition = Engine.LevelDefinition;
@@ -25,14 +25,14 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   isPlaying = false,
   playbackSpeed = 500 
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [playerPosition, setPlayerPosition] = useState<Position>({
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [currentStep, setCurrentStep] = React.useState(0);
+  const [playerPosition, setPlayerPosition] = React.useState<Position>({
     x: level.start.x,
     y: level.start.y,
     facing: level.start.facing
   });
-  const [collectedItems, setCollectedItems] = useState<Set<string>>(new Set());
+  const [collectedItems, setCollectedItems] = React.useState<Set<string>>(new Set());
 
   const CELL_SIZE = 60;
   const CANVAS_WIDTH = level.width * CELL_SIZE;
