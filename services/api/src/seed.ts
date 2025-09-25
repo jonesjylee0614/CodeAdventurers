@@ -1,4 +1,4 @@
-import { LevelDefinition } from '@engine/index';
+import { LevelDefinition } from '../../../packages/engine/src/index.ts';
 import {
   AdminProfile,
   ClassDefinition,
@@ -8,7 +8,7 @@ import {
   StudentProfile,
   TeacherProfile,
   WeeklyReport
-} from './store';
+} from './store.ts';
 
 export interface SeedOptions {
   now?: number;

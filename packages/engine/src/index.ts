@@ -7,7 +7,7 @@ import {
   SimulationOptions,
   SimulationResult,
   SimulationStep
-} from './types';
+} from './types.ts';
 
 const directionOrder: Direction[] = ['north', 'east', 'south', 'west'];
 
@@ -227,4 +227,4 @@ export function computeHint(level: LevelDefinition, payload: HintPayload): strin
   return level.hints[Math.min(payload.attempts, level.hints.length - 1)] ?? '检查一下积木的顺序。';
 }
 
-export * from './types';
+export * from './types.ts';

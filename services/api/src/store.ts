@@ -1,4 +1,4 @@
-import { LevelDefinition } from '@engine/index';
+import { LevelDefinition } from '../../../packages/engine/src/index.ts';
 import { Pool, PoolOptions, RowDataPacket, createPool } from 'mysql2/promise';
 
 function resolveMysqlUrl(): string | undefined {

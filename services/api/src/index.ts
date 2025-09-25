@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { LevelSimulator, Instruction, computeHint, HintPayload } from '../../../packages/engine/src/index.ts';
-import { TelemetryBuffer } from './telemetry';
-import { ensureSandboxUnlock, seedData } from './seed';
+import { TelemetryBuffer } from './telemetry.ts';
+import { ensureSandboxUnlock, seedData } from './seed.ts';
 import {
   AdminProfile,
   ClassDefinition,
@@ -18,7 +18,7 @@ import {
   WeeklyReport,
   WorkSubmission,
   createDataContext
-} from './store';
+} from './store.ts';
 
 interface RequestWithUser extends Request {
   user?: UserProfile;

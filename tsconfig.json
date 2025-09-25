@@ -8,6 +8,8 @@
     "strict": true,
     "skipLibCheck": true,
     "types": ["node"],
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "baseUrl": ".",
     "paths": {
       "@engine/*": ["packages/engine/src/*"],
