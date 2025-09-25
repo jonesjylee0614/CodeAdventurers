@@ -743,6 +743,37 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
     res.status(201).json({ ok: true });
   });
 
+  // 健康检查与落地页
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok', timestamp: Date.now() });
+  });
+
+  app.get('/', (_req, res) => {
+    res.type('html').send(`<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Code Adventurers API</title>
+    <style>
+      body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:40px;line-height:1.6}
+      code{background:#f5f5f5;padding:2px 6px;border-radius:4px}
+      a{color:#0b63ff;text-decoration:none}
+    </style>
+  </head>
+  <body>
+    <h1>Code Adventurers API 已启动</h1>
+    <p>常用入口：</p>
+    <ul>
+      <li><a href="/health">/health</a>（健康检查）</li>
+      <li><a href="/api/telemetry">/api/telemetry</a>（遥测缓存）</li>
+    </ul>
+    <p>调用受保护接口时请在请求头中添加 <code>x-user-id</code>（如 <code>student-1</code>）。</p>
+    <p>更多说明见 <code>docs/操作说明书.md</code> 与 <code>docs/项目总览.md</code>。</p>
+  </body>
+  </html>`);
+  });
+
   return { app, context, telemetry };
 }
 

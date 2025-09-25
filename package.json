@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -b",
-    "dev": "cross-env TS_NODE_PROJECT=tsconfig.json ts-node --esm scripts/dev-server.ts",
+    "dev": "cross-env TS_NODE_PROJECT=tsconfig.json NODE_OPTIONS=--experimental-specifier-resolution=node node --loader ts-node/esm --loader ./scripts/alias-loader.mjs scripts/dev-server.ts",
     "dev:api": "npm run dev",
     "test": "npm run test:jest",
     "test:jest": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --runInBand"
