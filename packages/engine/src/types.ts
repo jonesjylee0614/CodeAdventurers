@@ -25,16 +25,16 @@ export interface LevelDefinition {
   hints: string[];
 }
 
+export type Condition =
+  | { type: 'tile-ahead-walkable' }
+  | { type: 'collectibles-remaining' };
+
 export type Instruction =
   | { type: 'move' }
   | { type: 'turn'; direction: 'left' | 'right' }
   | { type: 'collect' }
   | { type: 'repeat'; times: number; body: Instruction[] }
   | { type: 'conditional'; condition: Condition; truthy: Instruction[]; falsy?: Instruction[] };
-
-export type Condition =
-  | { type: 'tile-ahead-walkable' }
-  | { type: 'collectibles-remaining' };
 
 export interface SimulationOptions {
   stepLimit?: number;
