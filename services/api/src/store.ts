@@ -1,6 +1,31 @@
 import { LevelDefinition } from '@engine/index';
 import { Pool, PoolOptions, RowDataPacket, createPool } from 'mysql2/promise';
 
+function resolveMysqlUrl(): string | undefined {
+  const directUrl = process.env.MYSQL_URL?.trim();
+  if (directUrl) {
+    return directUrl;
+  }
+
+  const host = process.env.MYSQL_HOST?.trim();
+  const user = process.env.MYSQL_USER?.trim();
+  const database = process.env.MYSQL_DATABASE?.trim();
+
+  if (!host || !user || !database) {
+    return undefined;
+  }
+
+  const port = process.env.MYSQL_PORT?.trim();
+  const passwordRaw = process.env.MYSQL_PASSWORD;
+  const hasPassword = passwordRaw !== undefined;
+  const encodedUser = encodeURIComponent(user);
+  const encodedPassword = hasPassword ? `:${encodeURIComponent(passwordRaw ?? '')}` : '';
+  const hostPort = `${encodeURIComponent(host)}${port ? `:${port}` : ''}`;
+  const encodedDatabase = encodeURIComponent(database);
+
+  return `mysql://${encodedUser}${encodedPassword}@${hostPort}/${encodedDatabase}`;
+}
+
 function cloneDeep<T>(value: T): T {
   if (typeof globalThis.structuredClone === 'function') {
     return globalThis.structuredClone(value);
@@ -352,19 +377,24 @@ async function ensureTables(pool: Pool, prefix: string): Promise<void> {
 }
 
 export async function createDataContext(options: CreateDataContextOptions = {}): Promise<DataContext> {
-  const mode = options.mode ?? (process.env.MYSQL_URL ? 'mysql' : 'memory');
+
+  const mysqlUrl = resolveMysqlUrl();
+  const mode = options.mode ?? (mysqlUrl ? 'mysql' : 'memory');
+
   const prefix = options.tablePrefix ?? process.env.MYSQL_TABLE_PREFIX ?? '';
   let pool = options.pool;
   let ownsPool = false;
 
   if (mode === 'mysql') {
     if (!pool) {
-      if (process.env.MYSQL_URL) {
-        pool = createPool({ uri: process.env.MYSQL_URL, waitForConnections: true, connectionLimit: 10 });
+
+      if (mysqlUrl) {
+        pool = createPool({ uri: mysqlUrl, waitForConnections: true, connectionLimit: 10 });
       } else if (options.mysql) {
         pool = createPool({ waitForConnections: true, connectionLimit: 10, ...options.mysql });
       } else {
-        throw new Error('MySQL mode requires MYSQL_URL environment variable or explicit connection options.');
+        throw new Error('MySQL mode requires MYSQL_URL (or MYSQL_HOST/MYSQL_USER/MYSQL_DATABASE) or explicit connection options.');
+
       }
       ownsPool = true;
     }

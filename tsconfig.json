@@ -25,6 +25,8 @@
     "apps/**/*.ts",
     "apps/**/*.tsx",
     "tests/**/*.ts",
-    "tests/**/*.tsx"
+    "tests/**/*.tsx",
+    "scripts/**/*.ts"
+
   ]
 }
