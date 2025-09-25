@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { LevelSimulator, Instruction, computeHint, HintPayload } from '@engine/index';
+import { LevelSimulator, Instruction, computeHint, HintPayload } from '../../../packages/engine/src/index.js';
 import { TelemetryBuffer } from './telemetry';
 import { ensureSandboxUnlock, seedData } from './seed';
 import {
