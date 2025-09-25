@@ -1,6 +1,10 @@
 import * as Engine from '../../../packages/engine/src/index.ts';
 type LevelDefinition = Engine.LevelDefinition;
-import { Pool, PoolOptions, RowDataPacket, createPool } from 'mysql2/promise';
+import mysql from 'mysql2/promise';
+type Pool = mysql.Pool;
+type PoolOptions = mysql.PoolOptions;
+type RowDataPacket = mysql.RowDataPacket;
+const createPool = mysql.createPool;
 
 function resolveMysqlUrl(): string | undefined {
   const directUrl = process.env.MYSQL_URL?.trim();
