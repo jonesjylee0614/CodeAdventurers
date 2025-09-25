@@ -1,13 +1,13 @@
-import {
-  Condition,
-  Direction,
-  ErrorCode,
-  Instruction,
-  LevelDefinition,
-  SimulationOptions,
-  SimulationResult,
-  SimulationStep
-} from './types.ts';
+import * as Types from './types.ts';
+
+type Condition = Types.Condition;
+type Direction = Types.Direction;
+type ErrorCode = Types.ErrorCode;
+type Instruction = Types.Instruction;
+type LevelDefinition = Types.LevelDefinition;
+type SimulationOptions = Types.SimulationOptions;
+type SimulationResult = Types.SimulationResult;
+type SimulationStep = Types.SimulationStep;
 
 const directionOrder: Direction[] = ['north', 'east', 'south', 'west'];
 
@@ -232,3 +232,4 @@ export function computeHint(level: LevelDefinition, payload: HintPayload): strin
 }
 
 export * from './types.ts';
+export type { Condition, Direction, ErrorCode, Instruction, LevelDefinition, SimulationOptions, SimulationResult, SimulationStep };
