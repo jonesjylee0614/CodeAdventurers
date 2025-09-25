@@ -62,6 +62,331 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
   const app = express();
   app.use(express.json());
 
+  // 首页路由 - 导航和功能介绍
+  app.get('/', (_req, res) => {
+    res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeAdventurers - 编程冒险家</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Microsoft YaHei', Arial, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px; 
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        .nav-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        .card-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+        .card h3 {
+            color: #4a5568;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+        .card p {
+            color: #718096;
+            line-height: 1.5;
+        }
+        .features {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            color: white;
+        }
+        .features h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .feature-item {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .feature-item h4 {
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: rgba(255,255,255,0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 CodeAdventurers</h1>
+            <p>欢迎来到编程冒险家平台！让编程学习变得有趣而简单</p>
+        </div>
+
+        <div class="nav-cards">
+            <a href="/student" class="card">
+                <div class="card-icon">🎓</div>
+                <h3>学生端</h3>
+                <p>开始你的编程冒险之旅！通过游戏化的方式学习编程，解锁新技能，收集成就徽章。</p>
+            </a>
+
+            <a href="/teacher" class="card">
+                <div class="card-icon">👨‍🏫</div>
+                <h3>教师端</h3>
+                <p>管理课程内容，创建编程关卡，追踪学生进度，查看学习分析报告。</p>
+            </a>
+
+            <a href="/parent" class="card">
+                <div class="card-icon">👨‍👩‍👧‍👦</div>
+                <h3>家长端</h3>
+                <p>查看孩子的学习进度，获取周报，了解孩子在编程学习中的表现。</p>
+            </a>
+
+            <a href="/admin" class="card">
+                <div class="card-icon">⚙️</div>
+                <h3>管理端</h3>
+                <p>系统管理，用户管理，数据分析，平台配置和维护。</p>
+            </a>
+        </div>
+
+        <div class="features">
+            <h2>✨ 平台特色功能</h2>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h4>🎮 游戏化学习</h4>
+                    <p>通过闯关模式学习编程，每个关卡都有独特的挑战和奖励，让学习过程充满乐趣。</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🏆 成就系统</h4>
+                    <p>解锁徽章、收集装备、完善图鉴，激发学习动力，记录成长历程。</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🛠️ 沙盒模式</h4>
+                    <p>自由创作编程作品，分享给同学，在实践中巩固所学知识。</p>
+                </div>
+                <div class="feature-item">
+                    <h4>📊 学习分析</h4>
+                    <p>详细的学习数据分析，帮助老师和家长了解学习情况，制定个性化学习计划。</p>
+                </div>
+                <div class="feature-item">
+                    <h4>💡 智能提示</h4>
+                    <p>当遇到困难时，系统会提供恰当的提示，引导学生思考而不是直接给出答案。</p>
+                </div>
+                <div class="feature-item">
+                    <h4>🌟 作品展示</h4>
+                    <p>学生可以发布自己的编程作品，获得同学和老师的点赞评论，建立学习社区。</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2025 CodeAdventurers - 让每个孩子都能享受编程的乐趣</p>
+            <p>API 文档: <a href="/api" style="color: #90cdf4;">/api</a></p>
+        </div>
+    </div>
+</body>
+</html>
+    `);
+  });
+
+  // 各端点的占位页面
+  app.get('/student', (_req, res) => {
+    res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生端 - CodeAdventurers</title>
+    <style>
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
+        .container { background: white; border-radius: 15px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 500px; }
+        h1 { color: #4a5568; margin-bottom: 20px; }
+        p { color: #718096; line-height: 1.6; margin-bottom: 20px; }
+        .back-link { display: inline-block; background: #667eea; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; transition: background 0.3s; }
+        .back-link:hover { background: #5a67d8; }
+        .status { background: #fed7d7; color: #c53030; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 学生端</h1>
+        <div class="status">开发中 - Coming Soon</div>
+        <p>这里将是学生的编程学习界面，包含：</p>
+        <ul style="text-align: left; color: #718096;">
+            <li>编程关卡挑战</li>
+            <li>成就系统</li>
+            <li>个人资料管理</li>
+            <li>沙盒创作工具</li>
+            <li>作品分享社区</li>
+        </ul>
+        <a href="/" class="back-link">← 返回首页</a>
+    </div>
+</body>
+</html>
+    `);
+  });
+
+  app.get('/teacher', (_req, res) => {
+    res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教师端 - CodeAdventurers</title>
+    <style>
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
+        .container { background: white; border-radius: 15px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 500px; }
+        h1 { color: #4a5568; margin-bottom: 20px; }
+        p { color: #718096; line-height: 1.6; margin-bottom: 20px; }
+        .back-link { display: inline-block; background: #667eea; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; transition: background 0.3s; }
+        .back-link:hover { background: #5a67d8; }
+        .status { background: #fed7d7; color: #c53030; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👨‍🏫 教师端</h1>
+        <div class="status">开发中 - Coming Soon</div>
+        <p>这里将是教师的管理界面，包含：</p>
+        <ul style="text-align: left; color: #718096;">
+            <li>课程内容管理</li>
+            <li>关卡编辑器</li>
+            <li>学生进度追踪</li>
+            <li>学习数据分析</li>
+            <li>作品审核系统</li>
+        </ul>
+        <a href="/" class="back-link">← 返回首页</a>
+    </div>
+</body>
+</html>
+    `);
+  });
+
+  app.get('/parent', (_req, res) => {
+    res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家长端 - CodeAdventurers</title>
+    <style>
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
+        .container { background: white; border-radius: 15px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 500px; }
+        h1 { color: #4a5568; margin-bottom: 20px; }
+        p { color: #718096; line-height: 1.6; margin-bottom: 20px; }
+        .back-link { display: inline-block; background: #667eea; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; transition: background 0.3s; }
+        .back-link:hover { background: #5a67d8; }
+        .status { background: #fed7d7; color: #c53030; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>👨‍👩‍👧‍👦 家长端</h1>
+        <div class="status">开发中 - Coming Soon</div>
+        <p>这里将是家长的监督界面，包含：</p>
+        <ul style="text-align: left; color: #718096;">
+            <li>孩子学习进度查看</li>
+            <li>周报和月报</li>
+            <li>学习时间统计</li>
+            <li>成就展示</li>
+            <li>学习建议</li>
+        </ul>
+        <a href="/" class="back-link">← 返回首页</a>
+    </div>
+</body>
+</html>
+    `);
+  });
+
+  app.get('/admin', (_req, res) => {
+    res.send(`
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理端 - CodeAdventurers</title>
+    <style>
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
+        .container { background: white; border-radius: 15px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 500px; }
+        h1 { color: #4a5568; margin-bottom: 20px; }
+        p { color: #718096; line-height: 1.6; margin-bottom: 20px; }
+        .back-link { display: inline-block; background: #667eea; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; transition: background 0.3s; }
+        .back-link:hover { background: #5a67d8; }
+        .status { background: #fed7d7; color: #c53030; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚙️ 管理端</h1>
+        <div class="status">开发中 - Coming Soon</div>
+        <p>这里将是系统管理界面，包含：</p>
+        <ul style="text-align: left; color: #718096;">
+            <li>用户管理</li>
+            <li>系统配置</li>
+            <li>数据统计</li>
+            <li>资源管理</li>
+            <li>平台监控</li>
+        </ul>
+        <a href="/" class="back-link">← 返回首页</a>
+    </div>
+</body>
+</html>
+    `);
+  });
+
   app.use(async (req: RequestWithUser, _res, next) => {
     try {
       const userId = req.header('x-user-id');
