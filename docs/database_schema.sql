@@ -2,7 +2,7 @@
 -- This script matches the JSON-first persistence model used by services/api.
 
 DROP DATABASE IF EXISTS code_adventurers;
-CREATE DATABASE code_adventurers CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+CREATE DATABASE code_adventurers CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE code_adventurers;
 
 -- Users, teachers, students, parents, admins share the same JSON payload.

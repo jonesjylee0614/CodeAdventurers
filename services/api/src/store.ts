@@ -377,20 +377,24 @@ async function ensureTables(pool: Pool, prefix: string): Promise<void> {
 }
 
 export async function createDataContext(options: CreateDataContextOptions = {}): Promise<DataContext> {
+
   const mysqlUrl = resolveMysqlUrl();
   const mode = options.mode ?? (mysqlUrl ? 'mysql' : 'memory');
+
   const prefix = options.tablePrefix ?? process.env.MYSQL_TABLE_PREFIX ?? '';
   let pool = options.pool;
   let ownsPool = false;
 
   if (mode === 'mysql') {
     if (!pool) {
+
       if (mysqlUrl) {
         pool = createPool({ uri: mysqlUrl, waitForConnections: true, connectionLimit: 10 });
       } else if (options.mysql) {
         pool = createPool({ waitForConnections: true, connectionLimit: 10, ...options.mysql });
       } else {
         throw new Error('MySQL mode requires MYSQL_URL (or MYSQL_HOST/MYSQL_USER/MYSQL_DATABASE) or explicit connection options.');
+
       }
       ownsPool = true;
     }
