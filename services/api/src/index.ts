@@ -1,4 +1,7 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express from 'express';
+type Request = express.Request;
+type Response = express.Response;
+type NextFunction = express.NextFunction;
 import * as Engine from '../../../packages/engine/src/index.ts';
 const LevelSimulator = Engine.LevelSimulator;
 const computeHint = Engine.computeHint;
