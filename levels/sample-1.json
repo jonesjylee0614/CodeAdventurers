@@ -1,0 +1,21 @@
+{
+  "id": "sample-1",
+  "name": "首关演示",
+  "width": 3,
+  "height": 3,
+  "tiles": [
+    { "x": 0, "y": 0, "walkable": true },
+    { "x": 1, "y": 0, "walkable": true },
+    { "x": 2, "y": 0, "walkable": true },
+    { "x": 2, "y": 1, "walkable": true, "collectible": "gem" },
+    { "x": 2, "y": 2, "walkable": true }
+  ],
+  "start": { "x": 0, "y": 0, "facing": "east" },
+  "goal": { "reach": { "x": 2, "y": 1 }, "collectibles": 0, "stepLimit": 10 },
+  "bestSteps": 5,
+  "hints": [
+    "先走到宝石旁边",
+    "记得拾取宝石",
+    "可以尝试使用循环"
+  ]
+}
