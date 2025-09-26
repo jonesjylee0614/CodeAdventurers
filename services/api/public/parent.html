@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>家长端 · Code Adventurers</title>
+  <style>
+    :root {
+      --primary: #ec4899;
+      --primary-dark: #db2777;
+      --bg: #fdf2f8;
+      --text: #311b2f;
+      --muted: #6b7280;
+      --border: rgba(219, 39, 119, 0.2);
+      font-family: 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: linear-gradient(120deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff;
+      padding: 32px 24px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+
+    header p {
+      margin: 0;
+      opacity: 0.9;
+    }
+
+    main {
+      flex: 1;
+      max-width: 1180px;
+      width: 100%;
+      margin: -48px auto 32px;
+      padding: 0 24px 32px;
+      display: grid;
+      gap: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 24px 60px rgba(219, 39, 119, 0.15);
+      padding: 32px;
+    }
+
+    .center { max-width: 420px; margin: 0 auto; }
+
+    label { display:block; font-weight: 600; margin-bottom: 6px; }
+
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(251, 207, 232, 0.9);
+      font-size: 1rem;
+      font-family: inherit;
+      transition: border 0.2s ease;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: rgba(236, 72, 153, 0.65);
+      box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.18);
+    }
+
+    button {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 12px 20px;
+      background: linear-gradient(120deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 36px rgba(219, 39, 119, 0.3);
+    }
+
+    .login-actions {
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    a.link { color: rgba(255,255,255,0.95); text-decoration: none; }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 24px;
+    }
+
+    .side-panel { display:grid; gap:18px; }
+
+    .panel-block {
+      border-radius: 18px;
+      border: 1px solid rgba(236, 72, 153, 0.18);
+      padding: 18px;
+      background: rgba(236, 72, 153, 0.05);
+    }
+
+    .panel-block h3 { margin-top:0; }
+
+    .child-card {
+      display: grid;
+      gap: 8px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid rgba(236, 72, 153, 0.12);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid rgba(236, 72, 153, 0.2);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 12px 18px;
+      border-radius: 14px 14px 0 0;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .tab[data-active="true"] {
+      background: #fff;
+      border-color: rgba(236, 72, 153, 0.3) rgba(236, 72, 153, 0.3) #fff;
+      color: var(--primary-dark);
+    }
+
+    .tab-panel { display:none; }
+    .tab-panel[data-active="true"] { display:grid; gap:20px; }
+
+    table { width:100%; border-collapse: collapse; font-size:0.95rem; }
+    th, td { border-bottom: 1px solid rgba(236, 72, 153, 0.15); padding: 12px 10px; text-align:left; }
+    th { color: var(--muted); font-weight:600; }
+
+    .stat-grid { display:grid; gap:14px; }
+    @media (min-width:900px) { .stat-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+
+    .stat-card {
+      border-radius: 16px;
+      padding: 18px;
+      background: linear-gradient(120deg, rgba(236,72,153,0.15), rgba(236,72,153,0.05));
+    }
+
+    .message-list { display:grid; gap:14px; }
+
+    .message {
+      border-radius: 16px;
+      border: 1px solid rgba(236, 72, 153, 0.14);
+      background: #fff;
+      padding: 16px;
+    }
+
+    .empty-state {
+      padding: 32px;
+      border: 2px dashed rgba(236, 72, 153, 0.3);
+      border-radius: 16px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    dialog {
+      border: none;
+      border-radius: 20px;
+      padding: 24px;
+      width: min(520px, 92vw);
+      box-shadow: 0 26px 50px rgba(236, 72, 153, 0.3);
+    }
+
+    dialog::backdrop { background: rgba(236, 72, 153, 0.25); }
+
+    .dialog-header {
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 1080px) {
+      main { margin-top: -32px; }
+      .dashboard { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div>
+        <h1>家长陪伴中心</h1>
+        <p>了解孩子进度 → 查看课堂反馈 → 安排家庭活动，实现家校协同闭环。</p>
+      </div>
+      <button type="button" class="link" data-action="logout" hidden>退出</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="card center" data-screen="auth">
+      <h2 style="margin-top:0;">家长登录</h2>
+      <p style="color:var(--muted);margin-bottom:24px;">绑定孩子账号后即可查看学习数据与家校沟通信息。</p>
+      <form id="parent-login">
+        <label for="parent-phone">手机号</label>
+        <input id="parent-phone" type="tel" placeholder="请输入手机号" required />
+        <label for="parent-code">验证码</label>
+        <input id="parent-code" placeholder="短信验证码" required />
+        <label for="parent-child">孩子邀请码</label>
+        <input id="parent-child" placeholder="例如：AD-1902" required />
+        <div class="login-actions">
+          <a class="link" href="/student.html">学生端入口</a>
+          <button type="submit">进入中心</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card dashboard" data-screen="dashboard" hidden>
+      <aside class="side-panel">
+        <div class="panel-block">
+          <h3>关注节奏</h3>
+          <ol style="margin:0;padding-left:20px;color:var(--muted);display:grid;gap:6px;font-size:0.95rem;">
+            <li>了解孩子学习进度</li>
+            <li>查看课堂与作业反馈</li>
+            <li>安排家庭陪伴任务</li>
+            <li>与老师保持沟通</li>
+          </ol>
+        </div>
+        <div class="panel-block">
+          <h3>孩子列表</h3>
+          <div id="child-list" style="display:grid;gap:12px;"></div>
+        </div>
+        <div class="panel-block">
+          <h3>家长日程</h3>
+          <ul id="schedule-list" style="margin:0;padding-left:20px;color:var(--muted);display:grid;gap:6px;font-size:0.9rem;"></ul>
+          <button type="button" style="margin-top:12px;background:#fff;color:var(--primary-dark);border:1px solid rgba(236,72,153,0.4);" data-dialog="schedule">添加日程</button>
+        </div>
+      </aside>
+      <section>
+        <nav class="tabs" role="tablist">
+          <button class="tab" data-tab="overview">首页总览</button>
+          <button class="tab" data-tab="progress">学习进度</button>
+          <button class="tab" data-tab="messages">家校沟通</button>
+          <button class="tab" data-tab="activities">家庭活动</button>
+        </nav>
+        <div class="tab-panels">
+          <div class="tab-panel" data-tab="overview">
+            <section class="stat-grid" id="overview-stats"></section>
+            <section>
+              <h3>课堂反馈</h3>
+              <table>
+                <thead><tr><th>课程</th><th>老师反馈</th><th>建议</th></tr></thead>
+                <tbody id="feedback-table"></tbody>
+              </table>
+            </section>
+          </div>
+
+          <div class="tab-panel" data-tab="progress">
+            <section>
+              <h3>学习轨迹</h3>
+              <table>
+                <thead><tr><th>日期</th><th>学习模块</th><th>完成情况</th><th>老师点评</th></tr></thead>
+                <tbody id="progress-table"></tbody>
+              </table>
+            </section>
+            <section>
+              <h3>成长关注</h3>
+              <div id="insight-list" class="message-list"></div>
+            </section>
+          </div>
+
+          <div class="tab-panel" data-tab="messages">
+            <section>
+              <h3>消息记录</h3>
+              <div id="message-list" class="message-list"></div>
+            </section>
+            <section>
+              <h3>联系老师</h3>
+              <form id="message-form" style="display:grid;gap:12px;">
+                <textarea name="content" placeholder="想对老师说点什么…" style="border-radius:16px;border:1px solid rgba(236,72,153,0.2);padding:12px;min-height:120px;font-family:inherit;"></textarea>
+                <div style="display:flex;justify-content:flex-end;gap:12px;">
+                  <button type="submit">发送消息</button>
+                </div>
+              </form>
+            </section>
+          </div>
+
+          <div class="tab-panel" data-tab="activities">
+            <section>
+              <h3>家庭陪伴任务</h3>
+              <div id="activity-list" class="message-list"></div>
+            </section>
+            <section class="empty-state" id="activity-empty" hidden>暂无活动，点击下方按钮一起安排家庭时光。</section>
+            <button type="button" style="align-self:flex-start;background:#fff;color:var(--primary-dark);border:1px solid rgba(236,72,153,0.4);" data-dialog="activity">添加陪伴任务</button>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <dialog id="schedule-dialog">
+    <div class="dialog-header">
+      <h3>新增日程</h3>
+      <button type="button" data-close="schedule">×</button>
+    </div>
+    <form id="schedule-form" style="display:grid;gap:14px;">
+      <label>提醒内容
+        <input name="title" required />
+      </label>
+      <label>日期
+        <input type="date" name="date" required />
+      </label>
+      <div style="display:flex;justify-content:flex-end;gap:12px;">
+        <button type="button" data-close="schedule" style="background:#f4f4f5;color:#4b5563;">取消</button>
+        <button type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="activity-dialog">
+    <div class="dialog-header">
+      <h3>添加陪伴任务</h3>
+      <button type="button" data-close="activity">×</button>
+    </div>
+    <form id="activity-form" style="display:grid;gap:14px;">
+      <label>任务主题
+        <input name="title" required />
+      </label>
+      <label>计划时间
+        <input type="date" name="date" required />
+      </label>
+      <label>任务说明
+        <textarea name="description" style="border-radius:16px;border:1px solid rgba(236,72,153,0.2);padding:12px;min-height:120px;"></textarea>
+      </label>
+      <div style="display:flex;justify-content:flex-end;gap:12px;">
+        <button type="button" data-close="activity" style="background:#f4f4f5;color:#4b5563;">取消</button>
+        <button type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    const state = {
+      loggedIn: false,
+      activeTab: 'overview',
+      children: [
+        { name: '小宇', grade: '五年级', level: 'Lv.3', progress: '完成 65%' },
+        { name: '笑笑', grade: '三年级', level: 'Lv.1', progress: '体验阶段' }
+      ],
+      schedule: [
+        '周三 19:30 家校沟通会',
+        '周六 10:00 亲子编程体验',
+        '每晚 20:30 学习复盘 15 分钟'
+      ],
+      stats: [
+        { label: '本周学习时长', value: '6.5 小时' },
+        { label: '课堂表现', value: '⭐⭐⭐⭐' },
+        { label: '作业完成率', value: '88%' }
+      ],
+      feedback: [
+        { course: '第一章 冒险入门', comment: '课堂参与度高，积极举手回答。', suggestion: '保持好奇心。' },
+        { course: '第二章 逻辑探索', comment: '能独立完成挑战，善于尝试。', suggestion: '继续优化代码效率。' }
+      ],
+      progress: [
+        { date: '3 月 12 日', module: '迷宫路径规划', status: '已完成', remark: '用时 25 分钟，逻辑清晰。' },
+        { date: '3 月 14 日', module: '循环挑战', status: '进行中', remark: '需要在循环终止条件上加强。' },
+        { date: '3 月 16 日', module: '团队协作副本', status: '待开始', remark: '等待小组成员齐全。' }
+      ],
+      insights: [
+        { title: '坚持自我管理', content: '连续 5 天完成学习计划，值得鼓励。' },
+        { title: '沟通建议', content: '可引导孩子描述课堂收获，培养反思能力。' }
+      ],
+      messages: [
+        { from: '班主任·李老师', time: '昨天 20:15', content: '提醒：周三有家长会，请提前安排时间。' },
+        { from: '系统通知', time: '本周一 08:00', content: '孩子获得「极速入门」勋章，快来送上鼓励！' }
+      ],
+      activities: [
+        { title: '亲子调试小游戏', date: '3 月 17 日', description: '与孩子一起完成小游戏 debug，了解他们的思路。' }
+      ]
+    };
+
+    const el = {
+      auth: document.querySelector('[data-screen="auth"]'),
+      dashboard: document.querySelector('[data-screen="dashboard"]'),
+      logout: document.querySelector('[data-action="logout"]'),
+      tabs: document.querySelectorAll('.tab'),
+      panels: document.querySelectorAll('.tab-panel'),
+      childList: document.getElementById('child-list'),
+      scheduleList: document.getElementById('schedule-list'),
+      overviewStats: document.getElementById('overview-stats'),
+      feedbackTable: document.getElementById('feedback-table'),
+      progressTable: document.getElementById('progress-table'),
+      insightList: document.getElementById('insight-list'),
+      messageList: document.getElementById('message-list'),
+      activityList: document.getElementById('activity-list'),
+      activityEmpty: document.getElementById('activity-empty'),
+      scheduleDialog: document.getElementById('schedule-dialog'),
+      activityDialog: document.getElementById('activity-dialog')
+    };
+
+    function renderChildren() {
+      el.childList.innerHTML = state.children.map(child => `
+        <article class="child-card">
+          <strong>${child.name}</strong>
+          <span style="color:var(--muted);">年级：${child.grade}</span>
+          <span style="color:var(--muted);">等级：${child.level}</span>
+          <span class="message" style="margin:0;">${child.progress}</span>
+        </article>
+      `).join('');
+    }
+
+    function renderSchedule() {
+      el.scheduleList.innerHTML = state.schedule.map(item => `<li>${item}</li>`).join('');
+    }
+
+    function renderOverview() {
+      el.overviewStats.innerHTML = state.stats.map(stat => `<article class="stat-card"><strong style="font-size:1.3rem;">${stat.value}</strong><p style="margin:6px 0 0;color:var(--muted);">${stat.label}</p></article>`).join('');
+      el.feedbackTable.innerHTML = state.feedback.map(row => `<tr><td>${row.course}</td><td>${row.comment}</td><td>${row.suggestion}</td></tr>`).join('');
+    }
+
+    function renderProgress() {
+      el.progressTable.innerHTML = state.progress.map(item => `<tr><td>${item.date}</td><td>${item.module}</td><td>${item.status}</td><td>${item.remark}</td></tr>`).join('');
+      el.insightList.innerHTML = state.insights.map(insight => `<article class="message"><strong>${insight.title}</strong><p style="margin:6px 0 0;color:var(--muted);">${insight.content}</p></article>`).join('');
+    }
+
+    function renderMessages() {
+      el.messageList.innerHTML = state.messages.map(msg => `<article class="message"><strong>${msg.from}</strong><span style="color:var(--muted);font-size:0.9rem;">${msg.time}</span><p style="margin:6px 0 0;color:var(--muted);">${msg.content}</p></article>`).join('');
+    }
+
+    function renderActivities() {
+      if (state.activities.length === 0) {
+        el.activityList.innerHTML = '';
+        el.activityEmpty.hidden = false;
+      } else {
+        el.activityEmpty.hidden = true;
+        el.activityList.innerHTML = state.activities.map(act => `<article class="message"><strong>${act.title}</strong><span style="color:var(--muted);font-size:0.9rem;">${act.date}</span><p style="margin:6px 0 0;color:var(--muted);">${act.description}</p></article>`).join('');
+      }
+    }
+
+    function changeTab(tab) {
+      state.activeTab = tab;
+      el.tabs.forEach(btn => {
+        const active = btn.dataset.tab === tab;
+        btn.dataset.active = String(active);
+        btn.setAttribute('aria-selected', active);
+      });
+      el.panels.forEach(panel => {
+        const active = panel.dataset.tab === tab;
+        panel.dataset.active = String(active);
+      });
+    }
+
+    document.getElementById('parent-login').addEventListener('submit', event => {
+      event.preventDefault();
+      state.loggedIn = true;
+      el.auth.hidden = true;
+      el.dashboard.hidden = false;
+      el.logout.hidden = false;
+      renderChildren();
+      renderSchedule();
+      renderOverview();
+      renderProgress();
+      renderMessages();
+      renderActivities();
+      changeTab(state.activeTab);
+    });
+
+    el.logout.addEventListener('click', () => {
+      state.loggedIn = false;
+      el.auth.hidden = false;
+      el.dashboard.hidden = true;
+      el.logout.hidden = true;
+    });
+
+    el.tabs.forEach(btn => btn.addEventListener('click', () => changeTab(btn.dataset.tab)));
+
+    document.addEventListener('click', event => {
+      const dialogType = event.target.dataset.dialog;
+      if (dialogType) {
+        document.getElementById(`${dialogType}-dialog`).showModal();
+      }
+      const closeType = event.target.dataset.close;
+      if (closeType) {
+        document.getElementById(`${closeType}-dialog`).close();
+      }
+    });
+
+    document.getElementById('schedule-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      state.schedule.push(`${formData.get('date')} ${formData.get('title')}`);
+      renderSchedule();
+      event.currentTarget.reset();
+      document.getElementById('schedule-dialog').close();
+    });
+
+    document.getElementById('activity-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      state.activities.push({
+        title: formData.get('title'),
+        date: formData.get('date'),
+        description: formData.get('description')
+      });
+      renderActivities();
+      event.currentTarget.reset();
+      document.getElementById('activity-dialog').close();
+    });
+
+    document.getElementById('message-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const content = formData.get('content');
+      if (!content) {
+        alert('请先填写想发送的内容。');
+        return;
+      }
+      state.messages.unshift({ from: '我', time: '刚刚', content });
+      renderMessages();
+      event.currentTarget.reset();
+      alert('已发送给老师，稍后请关注回复。');
+    });
+
+    changeTab('overview');
+  </script>
+</body>
+</html>
