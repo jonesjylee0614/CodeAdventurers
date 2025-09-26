@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>教师端 - CodeAdventurers</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Microsoft YaHei', system-ui, sans-serif;
+      background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+      color: #1f2937;
+    }
+
+    header {
+      color: #fff;
+      text-align: center;
+      padding: 48px 24px 16px;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 2.4rem;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .status {
+      padding: 14px 18px;
+      border-radius: 12px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.7);
+      color: #1d4ed8;
+    }
+
+    .status.error { color: #b91c1c; background: rgba(254, 202, 202, 0.7); }
+    .status.success { color: #047857; background: rgba(204, 251, 241, 0.7); }
+
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 16px 30px rgba(45, 55, 72, 0.25);
+      backdrop-filter: blur(12px);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      margin-bottom: 12px;
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    button {
+      background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+      border: none;
+      border-radius: 999px;
+      color: #fff;
+      font-weight: 600;
+      padding: 10px 18px;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 12px 24px rgba(99, 102, 241, 0.25);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 28px rgba(99, 102, 241, 0.3);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      box-shadow: none;
+      transform: none;
+      cursor: not-allowed;
+    }
+
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 12px;
+      border-radius: 12px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    @media (min-width: 960px) {
+      .grid.two-columns {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>👩‍🏫 CodeAdventurers 教师运营台</h1>
+    <p>管理课程、班级与作品，实时掌握学生学习数据。</p>
+  </header>
+  <main>
+    <div id="status" class="status" role="status">请先配置教师身份。</div>
+
+    <section class="grid two-columns">
+      <article class="card" aria-labelledby="identity-title">
+        <h2 id="identity-title">🔐 教师身份</h2>
+        <label for="teacher-id">用户 ID</label>
+        <input id="teacher-id" type="text" placeholder="teacher-1" />
+        <button id="apply-id">应用身份</button>
+        <button id="forget-id">清除记录</button>
+        <p>当前 ID：<strong id="current-id">未设置</strong></p>
+      </article>
+
+      <article class="card" aria-labelledby="course-title">
+        <h2 id="course-title">📚 课程管理</h2>
+        <div>
+          <button id="load-courses" disabled>加载课程列表</button>
+          <pre id="courses-output">尚未加载</pre>
+        </div>
+        <div>
+          <label for="course-name">课程名称</label>
+          <input id="course-name" type="text" placeholder="顺序指令进阶" />
+          <label for="course-desc">课程描述</label>
+          <textarea id="course-desc" placeholder="介绍课程目标、适用年级等信息"></textarea>
+          <button id="create-course" disabled>新建课程</button>
+        </div>
+        <div>
+          <label for="chapter-course-id">所属课程 ID</label>
+          <input id="chapter-course-id" type="text" placeholder="course-1" />
+          <label for="chapter-title">章节标题</label>
+          <input id="chapter-title" type="text" placeholder="第二章：条件判断" />
+          <button id="create-chapter" disabled>新增章节</button>
+        </div>
+        <div>
+          <label for="level-chapter-id">章节 ID</label>
+          <input id="level-chapter-id" type="text" placeholder="chapter-1" />
+          <label for="level-definition">关卡定义（JSON）</label>
+          <textarea id="level-definition" spellcheck="false">{
+  "level": {
+    "id": "level-demo",
+    "name": "示例关卡",
+    "width": 3,
+    "height": 3,
+    "tiles": [
+      { "x": 0, "y": 0, "walkable": true },
+      { "x": 1, "y": 0, "walkable": true },
+      { "x": 2, "y": 0, "walkable": true },
+      { "x": 2, "y": 1, "walkable": true, "collectible": "gem" },
+      { "x": 2, "y": 2, "walkable": true }
+    ],
+    "start": { "x": 0, "y": 0, "facing": "east" },
+    "goal": { "reach": { "x": 2, "y": 1 }, "collectibles": 1, "stepLimit": 12 },
+    "bestSteps": 4,
+    "hints": ["向前移动", "拾取宝石", "返回出口"],
+    "comic": "帮助角色拾取宝石并安全返回。",
+    "allowedBlocks": ["MOVE", "TURN_LEFT", "TURN_RIGHT"],
+    "rewards": { "stars": 3, "outfit": null }
+  }
+}</textarea>
+          <button id="create-level" disabled>添加关卡</button>
+        </div>
+      </article>
+
+      <article class="card" aria-labelledby="class-title">
+        <h2 id="class-title">🏫 班级管理</h2>
+        <div>
+          <button id="load-progress" disabled>加载班级概览</button>
+          <pre id="progress-output">尚未加载</pre>
+        </div>
+        <div>
+          <label for="student-class-id">班级 ID</label>
+          <input id="student-class-id" type="text" placeholder="class-1" />
+          <label for="student-name">学生姓名</label>
+          <input id="student-name" type="text" placeholder="新同学姓名" />
+          <button id="add-student" disabled>添加学生</button>
+        </div>
+        <div>
+          <label for="assign-class-id">班级 ID</label>
+          <input id="assign-class-id" type="text" placeholder="class-1" />
+          <label for="assign-course-id">课程 ID</label>
+          <input id="assign-course-id" type="text" placeholder="course-1" />
+          <button id="assign-course" disabled>布置课程</button>
+        </div>
+        <div>
+          <label for="hint-class-id">班级 ID</label>
+          <input id="hint-class-id" type="text" placeholder="class-1" />
+          <label for="hint-limit">提示上限</label>
+          <input id="hint-limit" type="number" min="0" value="3" />
+          <button id="update-hint" disabled>更新提示次数</button>
+        </div>
+      </article>
+
+      <article class="card" aria-labelledby="analytics-title">
+        <h2 id="analytics-title">📊 学习数据</h2>
+        <div>
+          <button id="load-heatmap" disabled>概念热力图</button>
+          <pre id="heatmap-output">尚未加载</pre>
+        </div>
+        <div>
+          <label for="replay-student-id">学生 ID</label>
+          <input id="replay-student-id" type="text" placeholder="student-1" />
+          <label for="replay-level-id">关卡 ID</label>
+          <input id="replay-level-id" type="text" placeholder="level-1" />
+          <button id="load-replay" disabled>查看回放日志</button>
+          <pre id="replay-output">尚未加载</pre>
+        </div>
+      </article>
+
+      <article class="card" aria-labelledby="works-title">
+        <h2 id="works-title">📝 作品审核</h2>
+        <div>
+          <button id="load-works" disabled>待审核作品</button>
+          <pre id="works-output">尚未加载</pre>
+        </div>
+        <div>
+          <label for="review-work-id">作品 ID</label>
+          <input id="review-work-id" type="text" placeholder="work-..." />
+          <select id="review-status">
+            <option value="approved">通过</option>
+            <option value="rejected">驳回</option>
+          </select>
+          <button id="submit-review" disabled>提交审核</button>
+        </div>
+      </article>
+    </section>
+  </main>
+  <script type="module">
+    const statusBox = document.getElementById('status');
+    const buttons = Array.from(document.querySelectorAll('button')).filter((btn) => !['apply-id', 'forget-id'].includes(btn.id));
+    const state = {
+      userId: localStorage.getItem('teacherUserId') || '',
+    };
+
+    const idInput = document.getElementById('teacher-id');
+    const currentId = document.getElementById('current-id');
+
+    function setStatus(message, type = 'info') {
+      statusBox.textContent = message;
+      statusBox.className = `status ${type === 'error' ? 'error' : type === 'success' ? 'success' : ''}`.trim() || 'status';
+    }
+
+    function syncState() {
+      const enabled = Boolean(state.userId);
+      currentId.textContent = enabled ? state.userId : '未设置';
+      for (const btn of buttons) {
+        btn.disabled = !enabled;
+      }
+      if (enabled) {
+        setStatus(`已启用教师身份 ${state.userId}。`, 'success');
+      } else {
+        setStatus('请先配置教师身份。', 'info');
+      }
+    }
+
+    function authHeaders() {
+      return state.userId ? { 'x-user-id': state.userId } : {};
+    }
+
+    async function api(path, options = {}) {
+      const opts = { method: 'GET', ...options };
+      opts.headers = { 'Content-Type': 'application/json', ...authHeaders(), ...(options.headers || {}) };
+      if (options.body && typeof options.body !== 'string') {
+        opts.body = JSON.stringify(options.body);
+      }
+      const response = await fetch(path, opts);
+      const text = await response.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (error) {
+        data = text;
+      }
+      if (!response.ok) {
+        throw new Error(data?.message || response.statusText);
+      }
+      return data;
+    }
+
+    document.getElementById('apply-id').addEventListener('click', () => {
+      const value = idInput.value.trim() || 'teacher-1';
+      state.userId = value;
+      localStorage.setItem('teacherUserId', value);
+      syncState();
+    });
+
+    document.getElementById('forget-id').addEventListener('click', () => {
+      localStorage.removeItem('teacherUserId');
+      state.userId = '';
+      syncState();
+    });
+
+    document.getElementById('load-courses').addEventListener('click', async () => {
+      try {
+        const data = await api('/api/teacher/courses');
+        document.getElementById('courses-output').textContent = JSON.stringify(data.courses, null, 2);
+        setStatus('课程列表已更新。', 'success');
+      } catch (error) {
+        setStatus(error.message || '加载课程失败', 'error');
+      }
+    });
+
+    document.getElementById('create-course').addEventListener('click', async () => {
+      try {
+        const name = document.getElementById('course-name').value || '未命名课程';
+        const description = document.getElementById('course-desc').value || '';
+        const data = await api('/api/teacher/courses', { method: 'POST', body: { name, description } });
+        document.getElementById('courses-output').textContent = JSON.stringify(data, null, 2);
+        setStatus('课程已创建。', 'success');
+      } catch (error) {
+        setStatus(error.message || '创建课程失败', 'error');
+      }
+    });
+
+    document.getElementById('create-chapter').addEventListener('click', async () => {
+      try {
+        const courseId = document.getElementById('chapter-course-id').value.trim();
+        const title = document.getElementById('chapter-title').value || '未命名章节';
+        if (!courseId) {
+          setStatus('请输入课程 ID。', 'error');
+          return;
+        }
+        const data = await api(`/api/teacher/courses/${courseId}/chapters`, { method: 'POST', body: { title } });
+        document.getElementById('courses-output').textContent = JSON.stringify(data, null, 2);
+        setStatus('章节已创建。', 'success');
+      } catch (error) {
+        setStatus(error.message || '创建章节失败', 'error');
+      }
+    });
+
+    document.getElementById('create-level').addEventListener('click', async () => {
+      try {
+        const chapterId = document.getElementById('level-chapter-id').value.trim();
+        if (!chapterId) {
+          setStatus('请输入章节 ID。', 'error');
+          return;
+        }
+        const text = document.getElementById('level-definition').value.trim();
+        const payload = text ? JSON.parse(text) : null;
+        if (!payload?.level?.id) {
+          setStatus('JSON 中缺少 level.id。', 'error');
+          return;
+        }
+        const data = await api(`/api/teacher/chapters/${chapterId}/levels`, { method: 'POST', body: payload });
+        setStatus('关卡已添加到章节。', 'success');
+        document.getElementById('courses-output').textContent = JSON.stringify(data, null, 2);
+      } catch (error) {
+        setStatus(error.message || '创建关卡失败', 'error');
+      }
+    });
+
+    document.getElementById('load-progress').addEventListener('click', async () => {
+      try {
+        const data = await api('/api/teacher/analytics/progress');
+        document.getElementById('progress-output').textContent = JSON.stringify(data.classes, null, 2);
+        setStatus('班级进度已获取。', 'success');
+      } catch (error) {
+        setStatus(error.message || '加载班级进度失败', 'error');
+      }
+    });
+
+    document.getElementById('add-student').addEventListener('click', async () => {
+      try {
+        const classId = document.getElementById('student-class-id').value.trim();
+        const name = document.getElementById('student-name').value || '新同学';
+        if (!classId) {
+          setStatus('请输入班级 ID。', 'error');
+          return;
+        }
+        const data = await api(`/api/teacher/classes/${classId}/students`, { method: 'POST', body: { name } });
+        document.getElementById('progress-output').textContent = JSON.stringify(data, null, 2);
+        setStatus('学生已加入班级。', 'success');
+      } catch (error) {
+        setStatus(error.message || '添加学生失败', 'error');
+      }
+    });
+
+    document.getElementById('assign-course').addEventListener('click', async () => {
+      try {
+        const classId = document.getElementById('assign-class-id').value.trim();
+        const courseId = document.getElementById('assign-course-id').value.trim();
+        if (!classId || !courseId) {
+          setStatus('请输入班级 ID 和课程 ID。', 'error');
+          return;
+        }
+        const data = await api(`/api/teacher/classes/${classId}/assign-course`, { method: 'POST', body: { courseId } });
+        document.getElementById('progress-output').textContent = JSON.stringify(data, null, 2);
+        setStatus('课程已布置给班级。', 'success');
+      } catch (error) {
+        setStatus(error.message || '布置课程失败', 'error');
+      }
+    });
+
+    document.getElementById('update-hint').addEventListener('click', async () => {
+      try {
+        const classId = document.getElementById('hint-class-id').value.trim();
+        const hintLimit = Number(document.getElementById('hint-limit').value || 0);
+        if (!classId) {
+          setStatus('请输入班级 ID。', 'error');
+          return;
+        }
+        const data = await api(`/api/teacher/classes/${classId}/hint-limit`, { method: 'PATCH', body: { hintLimit } });
+        document.getElementById('progress-output').textContent = JSON.stringify(data, null, 2);
+        setStatus('提示次数已更新。', 'success');
+      } catch (error) {
+        setStatus(error.message || '更新提示次数失败', 'error');
+      }
+    });
+
+    document.getElementById('load-heatmap').addEventListener('click', async () => {
+      try {
+        const data = await api('/api/teacher/analytics/heatmap');
+        document.getElementById('heatmap-output').textContent = JSON.stringify(data.heatmap, null, 2);
+        setStatus('热力图数据已加载。', 'success');
+      } catch (error) {
+        setStatus(error.message || '获取热力图失败', 'error');
+      }
+    });
+
+    document.getElementById('load-replay').addEventListener('click', async () => {
+      try {
+        const studentId = document.getElementById('replay-student-id').value.trim();
+        const levelId = document.getElementById('replay-level-id').value.trim();
+        if (!studentId || !levelId) {
+          setStatus('请输入学生 ID 和关卡 ID。', 'error');
+          return;
+        }
+        const data = await api(`/api/teacher/analytics/replays/${studentId}/${levelId}`);
+        document.getElementById('replay-output').textContent = JSON.stringify(data.replay, null, 2);
+        setStatus('已获取通关回放。', 'success');
+      } catch (error) {
+        setStatus(error.message || '获取回放失败', 'error');
+      }
+    });
+
+    document.getElementById('load-works').addEventListener('click', async () => {
+      try {
+        const data = await api('/api/teacher/works/pending');
+        document.getElementById('works-output').textContent = JSON.stringify(data.works, null, 2);
+        setStatus('待审核作品已加载。', 'success');
+      } catch (error) {
+        setStatus(error.message || '获取待审核作品失败', 'error');
+      }
+    });
+
+    document.getElementById('submit-review').addEventListener('click', async () => {
+      try {
+        const workId = document.getElementById('review-work-id').value.trim();
+        const statusValue = document.getElementById('review-status').value;
+        if (!workId) {
+          setStatus('请输入作品 ID。', 'error');
+          return;
+        }
+        const data = await api(`/api/teacher/works/${workId}/review`, { method: 'POST', body: { status: statusValue } });
+        document.getElementById('works-output').textContent = JSON.stringify(data, null, 2);
+        setStatus('审核结果已提交。', 'success');
+      } catch (error) {
+        setStatus(error.message || '审核失败', 'error');
+      }
+    });
+
+    if (state.userId) {
+      idInput.value = state.userId;
+    }
+    syncState();
+  </script>
+</body>
+</html>

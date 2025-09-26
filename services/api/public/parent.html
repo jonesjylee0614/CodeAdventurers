@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>家长端 - CodeAdventurers</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Microsoft YaHei', system-ui, sans-serif;
+      background: radial-gradient(circle at top, #a855f7 0%, #6366f1 50%, #312e81 100%);
+      min-height: 100vh;
+      color: #1f2937;
+    }
+
+    header {
+      text-align: center;
+      color: #fff;
+      padding: 48px 24px 16px;
+    }
+
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .status {
+      background: rgba(255, 255, 255, 0.9);
+      padding: 14px 18px;
+      border-radius: 14px;
+      font-weight: 600;
+      color: #1d4ed8;
+    }
+
+    .status.error { color: #b91c1c; }
+    .status.success { color: #047857; }
+
+    .card {
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 18px 36px rgba(15, 23, 42, 0.35);
+      backdrop-filter: blur(10px);
+    }
+
+    h2 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(129, 140, 248, 0.4);
+      margin-bottom: 12px;
+      font-family: inherit;
+    }
+
+    button {
+      background: linear-gradient(135deg, #6366f1, #ec4899);
+      border: none;
+      border-radius: 999px;
+      color: #fff;
+      font-weight: 600;
+      padding: 10px 20px;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      box-shadow: 0 14px 28px rgba(236, 72, 153, 0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 20px 30px rgba(236, 72, 153, 0.4);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      box-shadow: none;
+      transform: none;
+      cursor: not-allowed;
+    }
+
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 12px;
+      border-radius: 12px;
+      min-height: 120px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>👨‍👩‍👧 家长成长报告中心</h1>
+    <p>随时掌握孩子的学习进度、周报与常见难点。</p>
+  </header>
+  <main>
+    <div id="status" class="status" role="status">请设置家长身份。</div>
+
+    <article class="card" aria-labelledby="identity-title">
+      <h2 id="identity-title">🔐 家长身份</h2>
+      <label for="parent-id">用户 ID</label>
+      <input id="parent-id" type="text" placeholder="parent-1" />
+      <button id="apply-id">应用身份</button>
+      <button id="clear-id">清除记录</button>
+      <p>当前 ID：<strong id="current-id">未设置</strong></p>
+    </article>
+
+    <article class="card" aria-labelledby="children-title">
+      <h2 id="children-title">🧒 孩子列表</h2>
+      <button id="load-children" disabled>获取孩子信息</button>
+      <pre id="children-output">尚未加载</pre>
+    </article>
+
+    <article class="card" aria-labelledby="report-title">
+      <h2 id="report-title">🗒️ 学习周报</h2>
+      <label for="child-id">孩子 ID</label>
+      <input id="child-id" type="text" placeholder="student-1" />
+      <button id="load-report" disabled>查看周报</button>
+      <pre id="report-output">尚未加载</pre>
+    </article>
+
+    <article class="card" aria-labelledby="progress-title">
+      <h2 id="progress-title">📈 关卡进度</h2>
+      <button id="load-progress" disabled>获取详细进度</button>
+      <pre id="progress-output">尚未加载</pre>
+    </article>
+  </main>
+  <script type="module">
+    const statusBox = document.getElementById('status');
+    const buttons = Array.from(document.querySelectorAll('button')).filter((btn) => !['apply-id', 'clear-id'].includes(btn.id));
+    const idInput = document.getElementById('parent-id');
+    const currentId = document.getElementById('current-id');
+
+    const state = {
+      userId: localStorage.getItem('parentUserId') || '',
+      currentChild: '',
+    };
+
+    function setStatus(message, type = 'info') {
+      statusBox.textContent = message;
+      statusBox.className = `status ${type}`;
+    }
+
+    function syncState() {
+      const enabled = Boolean(state.userId);
+      currentId.textContent = enabled ? state.userId : '未设置';
+      for (const btn of buttons) {
+        btn.disabled = !enabled;
+      }
+      if (enabled) {
+        setStatus(`已启用家长身份 ${state.userId}。`, 'success');
+      } else {
+        setStatus('请设置家长身份。', 'info');
+      }
+    }
+
+    function authHeaders() {
+      return state.userId ? { 'x-user-id': state.userId } : {};
+    }
+
+    async function api(path, options = {}) {
+      const opts = { method: 'GET', ...options };
+      opts.headers = { 'Content-Type': 'application/json', ...authHeaders(), ...(options.headers || {}) };
+      if (options.body && typeof options.body !== 'string') {
+        opts.body = JSON.stringify(options.body);
+      }
+      const response = await fetch(path, opts);
+      const text = await response.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (error) {
+        data = text;
+      }
+      if (!response.ok) {
+        throw new Error(data?.message || response.statusText);
+      }
+      return data;
+    }
+
+    document.getElementById('apply-id').addEventListener('click', () => {
+      const value = idInput.value.trim() || 'parent-1';
+      state.userId = value;
+      localStorage.setItem('parentUserId', value);
+      syncState();
+    });
+
+    document.getElementById('clear-id').addEventListener('click', () => {
+      localStorage.removeItem('parentUserId');
+      state.userId = '';
+      syncState();
+    });
+
+    document.getElementById('load-children').addEventListener('click', async () => {
+      try {
+        const data = await api('/api/parent/children');
+        document.getElementById('children-output').textContent = JSON.stringify(data.children, null, 2);
+        if (data.children && data.children.length > 0) {
+          state.currentChild = data.children[0].id;
+          document.getElementById('child-id').value = state.currentChild;
+        }
+        setStatus('已加载孩子列表。', 'success');
+      } catch (error) {
+        setStatus(error.message || '加载孩子列表失败', 'error');
+      }
+    });
+
+    document.getElementById('load-report').addEventListener('click', async () => {
+      try {
+        const childId = document.getElementById('child-id').value.trim();
+        if (!childId) {
+          setStatus('请输入孩子 ID。', 'error');
+          return;
+        }
+        const data = await api(`/api/parent/children/${childId}/weekly-report`);
+        document.getElementById('report-output').textContent = JSON.stringify(data, null, 2);
+        state.currentChild = childId;
+        setStatus('周报已生成。', 'success');
+      } catch (error) {
+        setStatus(error.message || '获取周报失败', 'error');
+      }
+    });
+
+    document.getElementById('load-progress').addEventListener('click', async () => {
+      try {
+        const childId = document.getElementById('child-id').value.trim() || state.currentChild;
+        if (!childId) {
+          setStatus('请先选择孩子。', 'error');
+          return;
+        }
+        const data = await api(`/api/parent/children/${childId}/progress`);
+        document.getElementById('progress-output').textContent = JSON.stringify(data.progress, null, 2);
+        setStatus('已获取关卡进度。', 'success');
+      } catch (error) {
+        setStatus(error.message || '获取关卡进度失败', 'error');
+      }
+    });
+
+    if (state.userId) {
+      idInput.value = state.userId;
+    }
+    syncState();
+  </script>
+</body>
+</html>

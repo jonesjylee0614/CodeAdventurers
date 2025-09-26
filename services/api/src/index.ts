@@ -1,4 +1,6 @@
 import express from 'express';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 type Request = express.Request;
 type Response = express.Response;
 type NextFunction = express.NextFunction;
@@ -70,6 +72,9 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
 
   const app = express();
   app.use(express.json());
+
+  const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+  const publicDir = path.resolve(moduleDir, '../public');
 
   // 首页路由 - 导航和功能介绍
   app.get('/', (_req, res) => {
@@ -249,151 +254,19 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
 
   // 各端点的占位页面
   app.get('/student', (_req, res) => {
-    res.send(`
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>学生端 - CodeAdventurers</title>
-    <style>
-        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
-        .container { background: white; border-radius: 15px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 500px; }
-        h1 { color: #4a5568; margin-bottom: 20px; }
-        p { color: #718096; line-height: 1.6; margin-bottom: 20px; }
-        .back-link { display: inline-block; background: #667eea; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; transition: background 0.3s; }
-        .back-link:hover { background: #5a67d8; }
-        .status { background: #fed7d7; color: #c53030; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>🎓 学生端</h1>
-        <div class="status">开发中 - Coming Soon</div>
-        <p>这里将是学生的编程学习界面，包含：</p>
-        <ul style="text-align: left; color: #718096;">
-            <li>编程关卡挑战</li>
-            <li>成就系统</li>
-            <li>个人资料管理</li>
-            <li>沙盒创作工具</li>
-            <li>作品分享社区</li>
-        </ul>
-        <a href="/" class="back-link">← 返回首页</a>
-    </div>
-</body>
-</html>
-    `);
+    res.sendFile(path.join(publicDir, 'student.html'));
   });
 
   app.get('/teacher', (_req, res) => {
-    res.send(`
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>教师端 - CodeAdventurers</title>
-    <style>
-        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
-        .container { background: white; border-radius: 15px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 500px; }
-        h1 { color: #4a5568; margin-bottom: 20px; }
-        p { color: #718096; line-height: 1.6; margin-bottom: 20px; }
-        .back-link { display: inline-block; background: #667eea; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; transition: background 0.3s; }
-        .back-link:hover { background: #5a67d8; }
-        .status { background: #fed7d7; color: #c53030; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>👨‍🏫 教师端</h1>
-        <div class="status">开发中 - Coming Soon</div>
-        <p>这里将是教师的管理界面，包含：</p>
-        <ul style="text-align: left; color: #718096;">
-            <li>课程内容管理</li>
-            <li>关卡编辑器</li>
-            <li>学生进度追踪</li>
-            <li>学习数据分析</li>
-            <li>作品审核系统</li>
-        </ul>
-        <a href="/" class="back-link">← 返回首页</a>
-    </div>
-</body>
-</html>
-    `);
+    res.sendFile(path.join(publicDir, 'teacher.html'));
   });
 
   app.get('/parent', (_req, res) => {
-    res.send(`
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>家长端 - CodeAdventurers</title>
-    <style>
-        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
-        .container { background: white; border-radius: 15px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 500px; }
-        h1 { color: #4a5568; margin-bottom: 20px; }
-        p { color: #718096; line-height: 1.6; margin-bottom: 20px; }
-        .back-link { display: inline-block; background: #667eea; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; transition: background 0.3s; }
-        .back-link:hover { background: #5a67d8; }
-        .status { background: #fed7d7; color: #c53030; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>👨‍👩‍👧‍👦 家长端</h1>
-        <div class="status">开发中 - Coming Soon</div>
-        <p>这里将是家长的监督界面，包含：</p>
-        <ul style="text-align: left; color: #718096;">
-            <li>孩子学习进度查看</li>
-            <li>周报和月报</li>
-            <li>学习时间统计</li>
-            <li>成就展示</li>
-            <li>学习建议</li>
-        </ul>
-        <a href="/" class="back-link">← 返回首页</a>
-    </div>
-</body>
-</html>
-    `);
+    res.sendFile(path.join(publicDir, 'parent.html'));
   });
 
   app.get('/admin', (_req, res) => {
-    res.send(`
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理端 - CodeAdventurers</title>
-    <style>
-        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; margin: 0; }
-        .container { background: white; border-radius: 15px; padding: 40px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); max-width: 500px; }
-        h1 { color: #4a5568; margin-bottom: 20px; }
-        p { color: #718096; line-height: 1.6; margin-bottom: 20px; }
-        .back-link { display: inline-block; background: #667eea; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; transition: background 0.3s; }
-        .back-link:hover { background: #5a67d8; }
-        .status { background: #fed7d7; color: #c53030; padding: 10px; border-radius: 5px; margin-bottom: 20px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>⚙️ 管理端</h1>
-        <div class="status">开发中 - Coming Soon</div>
-        <p>这里将是系统管理界面，包含：</p>
-        <ul style="text-align: left; color: #718096;">
-            <li>用户管理</li>
-            <li>系统配置</li>
-            <li>数据统计</li>
-            <li>资源管理</li>
-            <li>平台监控</li>
-        </ul>
-        <a href="/" class="back-link">← 返回首页</a>
-    </div>
-</body>
-</html>
-    `);
+    res.sendFile(path.join(publicDir, 'admin.html'));
   });
 
   app.use(async (req: RequestWithUser, _res, next) => {
