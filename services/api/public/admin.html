@@ -2,301 +2,578 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>管理端 - CodeAdventurers</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>管理端 · Code Adventurers</title>
   <style>
+    :root {
+      --primary: #0f766e;
+      --primary-dark: #0c4a47;
+      --bg: #f0fdf4;
+      --text: #062320;
+      --muted: #4b5563;
+      --border: rgba(15, 118, 110, 0.25);
+      font-family: 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: 'Microsoft YaHei', system-ui, sans-serif;
-      background: linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #334155 100%);
-      color: #e2e8f0;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     header {
-      text-align: center;
-      padding: 48px 24px 16px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff;
+      padding: 32px 24px;
     }
 
     header h1 {
-      margin: 0 0 12px;
-      font-size: 2.4rem;
+      margin: 0 0 8px;
+      font-size: 2rem;
     }
 
     header p {
       margin: 0;
-      opacity: 0.85;
+      opacity: 0.88;
     }
 
     main {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 24px;
+      flex: 1;
+      max-width: 1280px;
+      width: 100%;
+      margin: -48px auto 32px;
+      padding: 0 24px 32px;
       display: grid;
-      gap: 20px;
+      gap: 24px;
     }
-
-    .status {
-      padding: 14px 18px;
-      border-radius: 12px;
-      background: rgba(59, 130, 246, 0.15);
-      color: #93c5fd;
-      font-weight: 600;
-    }
-
-    .status.error { background: rgba(248, 113, 113, 0.2); color: #fecaca; }
-    .status.success { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
 
     .card {
-      background: rgba(15, 23, 42, 0.85);
-      border-radius: 18px;
-      padding: 20px;
-      box-shadow: 0 18px 34px rgba(15, 23, 42, 0.45);
-      backdrop-filter: blur(12px);
+      background: #fff;
+      border-radius: 22px;
+      box-shadow: 0 24px 60px rgba(14, 116, 110, 0.2);
+      padding: 32px;
     }
 
-    h2 {
-      margin-top: 0;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .center { max-width: 420px; margin: 0 auto; }
+    label { display:block;font-weight:600;margin-bottom:6px; }
 
-    label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: 500;
-    }
-
-    input, textarea, select {
+    input, select {
       width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      margin-bottom: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(167, 243, 208, 0.7);
+      font-size: 1rem;
       font-family: inherit;
-      background: rgba(15, 23, 42, 0.6);
-      color: #f8fafc;
+      transition: border 0.2s ease;
     }
 
-    textarea {
-      min-height: 100px;
-      resize: vertical;
+    input:focus, select:focus {
+      outline: none;
+      border-color: rgba(15, 118, 110, 0.7);
+      box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.25);
     }
 
     button {
-      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      appearance: none;
       border: none;
-      border-radius: 999px;
+      border-radius: 12px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
       color: #fff;
       font-weight: 600;
-      padding: 10px 20px;
       cursor: pointer;
-      margin-right: 8px;
-      margin-bottom: 8px;
-      box-shadow: 0 18px 32px rgba(124, 58, 237, 0.35);
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
     }
 
-    button:hover {
+    button:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 24px 36px rgba(124, 58, 237, 0.4);
+      box-shadow: 0 18px 40px rgba(15, 118, 110, 0.28);
     }
 
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
+    .login-actions {
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 18px;
     }
 
-    pre {
-      background: rgba(15, 23, 42, 0.9);
-      color: #f1f5f9;
-      padding: 12px;
-      border-radius: 12px;
-      overflow-x: auto;
-      font-size: 0.9rem;
+    a.link { color: rgba(255,255,255,0.95); text-decoration: none; }
+
+    .dashboard {
+      display:grid;
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
+    }
+
+    .side-panel { display:grid; gap:18px; }
+    .panel-block {
+      border-radius: 18px;
+      border: 1px solid rgba(45, 212, 191, 0.35);
+      background: rgba(209, 250, 229, 0.6);
+      padding: 20px;
+    }
+
+    .panel-block h3 { margin-top:0; }
+
+    .tabs {
+      display:flex;
+      gap:8px;
+      border-bottom: 1px solid rgba(15, 118, 110, 0.25);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 12px 18px;
+      border-radius: 14px 14px 0 0;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .tab[data-active="true"] {
+      background: #fff;
+      border-color: rgba(15, 118, 110, 0.35) rgba(15, 118, 110, 0.35) #fff;
+      color: var(--primary-dark);
+    }
+
+    .tab-panel { display:none; }
+    .tab-panel[data-active="true"] { display:grid; gap:20px; }
+
+    table { width:100%; border-collapse: collapse; font-size:0.95rem; }
+    th, td { border-bottom: 1px solid rgba(15, 118, 110, 0.2); padding: 12px 10px; text-align:left; }
+    th { color: var(--muted); font-weight:600; }
+
+    .stat-grid { display:grid; gap:14px; }
+    @media (min-width:900px) { .stat-grid { grid-template-columns: repeat(3, minmax(0,1fr)); } }
+
+    .stat-card {
+      border-radius: 16px;
+      padding: 18px;
+      background: linear-gradient(120deg, rgba(16, 185, 129, 0.18), rgba(45, 212, 191, 0.15));
+    }
+
+    .log-list { display:grid; gap:12px; }
+
+    .log-item {
+      border-radius: 16px;
+      border: 1px solid rgba(15, 118, 110, 0.15);
+      background: #fff;
+      padding: 16px;
+      display:grid;
+      gap:6px;
+    }
+
+    .empty-state {
+      padding: 32px;
+      border: 2px dashed rgba(15, 118, 110, 0.3);
+      border-radius: 16px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    dialog {
+      border: none;
+      border-radius: 20px;
+      padding: 24px;
+      width: min(540px, 92vw);
+      box-shadow: 0 32px 60px rgba(15, 118, 110, 0.35);
+    }
+
+    dialog::backdrop { background: rgba(15, 118, 110, 0.3); }
+
+    .dialog-header {
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    @media (max-width: 1080px) {
+      main { margin-top: -32px; }
+      .dashboard { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>🛠️ CodeAdventurers 管理控制台</h1>
-    <p>掌握平台运营概况，管理素材与账号，导出数据。</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div>
+        <h1>平台管理控制中心</h1>
+        <p>监控运营数据 → 管理用户与资源 → 审核内容与安全，保障平台稳定运行。</p>
+      </div>
+      <button type="button" class="link" data-action="logout" hidden>退出</button>
+    </div>
   </header>
+
   <main>
-    <div id="status" class="status" role="status">请设置管理员身份。</div>
+    <section class="card center" data-screen="auth">
+      <h2 style="margin-top:0;">管理员登录</h2>
+      <p style="color:var(--muted);margin-bottom:24px;">使用双重认证账户登录，确保平台安全。</p>
+      <form id="admin-login">
+        <label for="admin-email">邮箱</label>
+        <input id="admin-email" type="email" placeholder="admin@example.com" required />
+        <label for="admin-password">密码</label>
+        <input id="admin-password" type="password" placeholder="••••••••" required />
+        <label for="admin-token">动态口令</label>
+        <input id="admin-token" placeholder="六位验证码" required />
+        <div class="login-actions">
+          <a class="link" href="/teacher.html">返回教师端</a>
+          <button type="submit">进入控制中心</button>
+        </div>
+      </form>
+    </section>
 
-    <article class="card" aria-labelledby="identity-title">
-      <h2 id="identity-title">🔐 管理员身份</h2>
-      <label for="admin-id">用户 ID</label>
-      <input id="admin-id" type="text" placeholder="admin-1" />
-      <button id="apply-id">应用身份</button>
-      <button id="clear-id">清除记录</button>
-      <p>当前 ID：<strong id="current-id">未设置</strong></p>
-    </article>
+    <section class="card dashboard" data-screen="dashboard" hidden>
+      <aside class="side-panel">
+        <div class="panel-block">
+          <h3>运营闭环</h3>
+          <ol style="margin:0;padding-left:20px;color:var(--muted);display:grid;gap:6px;font-size:0.95rem;">
+            <li>监控核心指标，预警异常波动</li>
+            <li>管理用户与权限，保障体验</li>
+            <li>审核课程内容，维护质量</li>
+            <li>追踪系统日志，闭环问题处理</li>
+          </ol>
+        </div>
+        <div class="panel-block">
+          <h3>系统状态</h3>
+          <ul id="status-list" style="margin:0;padding-left:20px;color:var(--muted);display:grid;gap:6px;font-size:0.9rem;"></ul>
+        </div>
+        <div class="panel-block">
+          <h3>快捷入口</h3>
+          <div style="display:grid;gap:10px;">
+            <button type="button" style="background:#fff;color:var(--primary-dark);border:1px solid rgba(15,118,110,0.35);" data-dialog="user">创建账号</button>
+            <button type="button" style="background:#fff;color:var(--primary-dark);border:1px solid rgba(15,118,110,0.35);" data-dialog="content">发布课程</button>
+            <button type="button" style="background:#fff;color:var(--primary-dark);border:1px solid rgba(15,118,110,0.35);" data-dialog="alert">发布公告</button>
+          </div>
+        </div>
+      </aside>
+      <section>
+        <nav class="tabs" role="tablist">
+          <button class="tab" data-tab="overview">运营总览</button>
+          <button class="tab" data-tab="users">用户管理</button>
+          <button class="tab" data-tab="content">课程资源</button>
+          <button class="tab" data-tab="system">系统监控</button>
+          <button class="tab" data-tab="security">安全审计</button>
+        </nav>
+        <div class="tab-panels">
+          <div class="tab-panel" data-tab="overview">
+            <section class="stat-grid" id="overview-stats"></section>
+            <section>
+              <h3>关键指标</h3>
+              <table>
+                <thead><tr><th>指标</th><th>当前值</th><th>环比</th><th>趋势说明</th></tr></thead>
+                <tbody id="metric-table"></tbody>
+              </table>
+            </section>
+          </div>
 
-    <article class="card" aria-labelledby="overview-title">
-      <h2 id="overview-title">📊 平台总览</h2>
-      <button id="load-overview" disabled>刷新指标</button>
-      <pre id="overview-output">尚未加载</pre>
-    </article>
+          <div class="tab-panel" data-tab="users">
+            <section>
+              <h3>用户一览</h3>
+              <table>
+                <thead><tr><th>姓名</th><th>角色</th><th>状态</th><th>最后登录</th></tr></thead>
+                <tbody id="user-table"></tbody>
+              </table>
+            </section>
+          </div>
 
-    <article class="card" aria-labelledby="asset-title">
-      <h2 id="asset-title">🎨 素材管理</h2>
-      <label for="asset-name">素材名称</label>
-      <input id="asset-name" type="text" placeholder="新插画" />
-      <label for="asset-type">素材类型</label>
-      <select id="asset-type">
-        <option value="image">图片</option>
-        <option value="audio">音频</option>
-        <option value="document">文档</option>
-      </select>
-      <label for="asset-meta">元数据（JSON）</label>
-      <textarea id="asset-meta" spellcheck="false">{
-  "tags": ["banner", "promo"],
-  "author": "设计团队"
-}</textarea>
-      <button id="create-asset" disabled>上传素材</button>
-      <pre id="asset-output">尚未上传</pre>
-    </article>
+          <div class="tab-panel" data-tab="content">
+            <section>
+              <h3>课程资源</h3>
+              <table>
+                <thead><tr><th>课程名称</th><th>版本</th><th>状态</th><th>审核</th></tr></thead>
+                <tbody id="content-table"></tbody>
+              </table>
+            </section>
+          </div>
 
-    <article class="card" aria-labelledby="user-title">
-      <h2 id="user-title">👥 账号管理</h2>
-      <label for="user-name">用户名称</label>
-      <input id="user-name" type="text" placeholder="新用户" />
-      <label for="user-role">角色</label>
-      <select id="user-role">
-        <option value="student">学生</option>
-        <option value="teacher">教师</option>
-        <option value="parent">家长</option>
-        <option value="admin">管理员</option>
-      </select>
-      <button id="create-user" disabled>创建账号</button>
-      <pre id="user-output">尚未创建</pre>
-    </article>
+          <div class="tab-panel" data-tab="system">
+            <section>
+              <h3>系统监控</h3>
+              <div class="stat-grid" id="system-cards"></div>
+            </section>
+            <section>
+              <h3>实时事件</h3>
+              <div id="event-log" class="log-list"></div>
+            </section>
+          </div>
 
-    <article class="card" aria-labelledby="export-title">
-      <h2 id="export-title">📦 数据导出</h2>
-      <button id="export-progress" disabled>导出学习进度</button>
-      <pre id="export-output">尚未导出</pre>
-    </article>
+          <div class="tab-panel" data-tab="security">
+            <section>
+              <h3>安全审计日志</h3>
+              <div id="audit-log" class="log-list"></div>
+            </section>
+            <section class="empty-state" id="audit-empty" hidden>暂无新的安全告警。</section>
+          </div>
+        </div>
+      </section>
+    </section>
   </main>
-  <script type="module">
-    const statusBox = document.getElementById('status');
-    const buttons = Array.from(document.querySelectorAll('button')).filter((btn) => !['apply-id', 'clear-id'].includes(btn.id));
-    const idInput = document.getElementById('admin-id');
-    const currentId = document.getElementById('current-id');
 
+  <dialog id="user-dialog">
+    <div class="dialog-header">
+      <h3>创建平台账号</h3>
+      <button type="button" data-close="user">×</button>
+    </div>
+    <form id="user-form" style="display:grid;gap:14px;">
+      <label>姓名
+        <input name="name" required />
+      </label>
+      <label>角色
+        <select name="role" required>
+          <option value="student">学生</option>
+          <option value="teacher">教师</option>
+          <option value="parent">家长</option>
+          <option value="admin">管理员</option>
+        </select>
+      </label>
+      <label>状态
+        <select name="status">
+          <option value="active">启用</option>
+          <option value="inactive">停用</option>
+        </select>
+      </label>
+      <div style="display:flex;justify-content:flex-end;gap:12px;">
+        <button type="button" data-close="user" style="background:#e5e7eb;color:#111827;">取消</button>
+        <button type="submit">创建</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="content-dialog">
+    <div class="dialog-header">
+      <h3>发布课程资源</h3>
+      <button type="button" data-close="content">×</button>
+    </div>
+    <form id="content-form" style="display:grid;gap:14px;">
+      <label>课程标题
+        <input name="title" required />
+      </label>
+      <label>版本号
+        <input name="version" placeholder="v1.0" required />
+      </label>
+      <label>状态
+        <select name="status">
+          <option value="draft">草稿</option>
+          <option value="review">待审核</option>
+          <option value="published">已上线</option>
+        </select>
+      </label>
+      <div style="display:flex;justify-content:flex-end;gap:12px;">
+        <button type="button" data-close="content" style="background:#e5e7eb;color:#111827;">取消</button>
+        <button type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="alert-dialog">
+    <div class="dialog-header">
+      <h3>发布系统公告</h3>
+      <button type="button" data-close="alert">×</button>
+    </div>
+    <form id="alert-form" style="display:grid;gap:14px;">
+      <label>公告标题
+        <input name="title" required />
+      </label>
+      <label>公告内容
+        <textarea name="content" style="border-radius:16px;border:1px solid rgba(15,118,110,0.25);padding:12px;min-height:120px;"></textarea>
+      </label>
+      <div style="display:flex;justify-content:flex-end;gap:12px;">
+        <button type="button" data-close="alert" style="background:#e5e7eb;color:#111827;">取消</button>
+        <button type="submit">发布</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
     const state = {
-      userId: localStorage.getItem('adminUserId') || '',
+      loggedIn: false,
+      activeTab: 'overview',
+      stats: [
+        { label: '月活跃用户', value: '18,920', hint: '较上月 +6%' },
+        { label: '课程上线数', value: '128', hint: '新增 5 个系列' },
+        { label: '系统可用性', value: '99.98%', hint: '维持高可用' }
+      ],
+      metrics: [
+        { name: '新用户增长', value: '1,280', change: '+12%', trend: '开学季活动带动注册。' },
+        { name: '订阅续费率', value: '91%', change: '+2%', trend: '家长体验课转化提升。' },
+        { name: '师资活跃度', value: '87%', change: '-3%', trend: '需关注寒假后复课节奏。' }
+      ],
+      users: [
+        { name: '张晨', role: '教师', status: '启用', lastLogin: '今天 09:12' },
+        { name: '李雷', role: '学生', status: '启用', lastLogin: '昨天 21:45' },
+        { name: '王芳', role: '家长', status: '启用', lastLogin: '昨天 20:10' },
+        { name: '超级管理员', role: '管理员', status: '启用', lastLogin: '今天 08:00' }
+      ],
+      content: [
+        { title: '冒险入门', version: 'v2.1', status: '已上线', audit: '通过' },
+        { title: '机器人迷宫进阶', version: 'v1.4', status: '待审核', audit: '排期中' },
+        { title: 'AI 创意营', version: 'v0.9', status: '草稿', audit: '待提交' }
+      ],
+      systems: [
+        { label: 'API 响应时间', value: '180 ms', hint: '稳定' },
+        { label: '错误率', value: '0.18%', hint: '低风险' },
+        { label: '队列延迟', value: '220 ms', hint: '正常' }
+      ],
+      events: [
+        { time: '09:32', title: '后台任务完成', detail: '日报同步完毕。' },
+        { time: '08:58', title: '新增课程提交', detail: '教师「周老师」提交课程待审核。' },
+        { time: '08:15', title: '巡检通过', detail: '系统巡检完成，未发现异常。' }
+      ],
+      audits: [
+        { time: '昨天 22:30', title: '登录失败提醒', detail: '管理员账户连续失败 3 次，已锁定 10 分钟。' }
+      ],
+      status: [
+        '数据库：运行正常',
+        '对象存储：延迟低',
+        '消息队列：排队 3 条',
+        'CDN：全节点健康'
+      ]
     };
 
-    function setStatus(message, type = 'info') {
-      statusBox.textContent = message;
-      statusBox.className = `status ${type}`;
+    const el = {
+      auth: document.querySelector('[data-screen="auth"]'),
+      dashboard: document.querySelector('[data-screen="dashboard"]'),
+      logout: document.querySelector('[data-action="logout"]'),
+      tabs: document.querySelectorAll('.tab'),
+      panels: document.querySelectorAll('.tab-panel'),
+      overviewStats: document.getElementById('overview-stats'),
+      metricTable: document.getElementById('metric-table'),
+      userTable: document.getElementById('user-table'),
+      contentTable: document.getElementById('content-table'),
+      systemCards: document.getElementById('system-cards'),
+      eventLog: document.getElementById('event-log'),
+      auditLog: document.getElementById('audit-log'),
+      auditEmpty: document.getElementById('audit-empty'),
+      statusList: document.getElementById('status-list')
+    };
+
+    function renderOverview() {
+      el.overviewStats.innerHTML = state.stats.map(stat => `<article class="stat-card"><strong style="font-size:1.4rem;">${stat.value}</strong><p style="margin:6px 0 0;color:var(--muted);">${stat.label}</p><span style="margin-top:8px;display:inline-flex;padding:4px 10px;border-radius:999px;background:rgba(15,118,110,0.12);color:var(--primary-dark);font-size:0.85rem;">${stat.hint}</span></article>`).join('');
+      el.metricTable.innerHTML = state.metrics.map(metric => `<tr><td>${metric.name}</td><td>${metric.value}</td><td>${metric.change}</td><td>${metric.trend}</td></tr>`).join('');
     }
 
-    function syncState() {
-      const enabled = Boolean(state.userId);
-      currentId.textContent = enabled ? state.userId : '未设置';
-      for (const btn of buttons) {
-        btn.disabled = !enabled;
-      }
-      if (enabled) {
-        setStatus(`已启用管理员身份 ${state.userId}。`, 'success');
+    function renderUsers() {
+      el.userTable.innerHTML = state.users.map(user => `<tr><td>${user.name}</td><td>${user.role}</td><td>${user.status}</td><td>${user.lastLogin}</td></tr>`).join('');
+    }
+
+    function renderContent() {
+      el.contentTable.innerHTML = state.content.map(item => `<tr><td>${item.title}</td><td>${item.version}</td><td>${item.status}</td><td>${item.audit}</td></tr>`).join('');
+    }
+
+    function renderSystem() {
+      el.systemCards.innerHTML = state.systems.map(card => `<article class="stat-card"><strong style="font-size:1.3rem;">${card.value}</strong><p style="margin:6px 0 0;color:var(--muted);">${card.label}</p><span style="margin-top:8px;color:var(--primary-dark);font-size:0.9rem;">${card.hint}</span></article>`).join('');
+      el.eventLog.innerHTML = state.events.map(event => `<article class="log-item"><strong>${event.title}</strong><span style="color:var(--muted);font-size:0.9rem;">${event.time}</span><p style="margin:0;color:var(--muted);">${event.detail}</p></article>`).join('');
+    }
+
+    function renderAudit() {
+      if (state.audits.length === 0) {
+        el.auditLog.innerHTML = '';
+        el.auditEmpty.hidden = false;
       } else {
-        setStatus('请设置管理员身份。', 'info');
+        el.auditEmpty.hidden = true;
+        el.auditLog.innerHTML = state.audits.map(audit => `<article class="log-item"><strong>${audit.title}</strong><span style="color:var(--muted);font-size:0.9rem;">${audit.time}</span><p style="margin:0;color:var(--muted);">${audit.detail}</p></article>`).join('');
       }
     }
 
-    function authHeaders() {
-      return state.userId ? { 'x-user-id': state.userId } : {};
+    function renderStatus() {
+      el.statusList.innerHTML = state.status.map(item => `<li>${item}</li>`).join('');
     }
 
-    async function api(path, options = {}) {
-      const opts = { method: 'GET', ...options };
-      opts.headers = { 'Content-Type': 'application/json', ...authHeaders(), ...(options.headers || {}) };
-      if (options.body && typeof options.body !== 'string') {
-        opts.body = JSON.stringify(options.body);
-      }
-      const response = await fetch(path, opts);
-      const text = await response.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (error) {
-        data = text;
-      }
-      if (!response.ok) {
-        throw new Error(data?.message || response.statusText);
-      }
-      return data;
+    function changeTab(tab) {
+      state.activeTab = tab;
+      el.tabs.forEach(btn => {
+        const active = btn.dataset.tab === tab;
+        btn.dataset.active = String(active);
+        btn.setAttribute('aria-selected', active);
+      });
+      el.panels.forEach(panel => {
+        const active = panel.dataset.tab === tab;
+        panel.dataset.active = String(active);
+      });
     }
 
-    document.getElementById('apply-id').addEventListener('click', () => {
-      const value = idInput.value.trim() || 'admin-1';
-      state.userId = value;
-      localStorage.setItem('adminUserId', value);
-      syncState();
+    document.getElementById('admin-login').addEventListener('submit', event => {
+      event.preventDefault();
+      state.loggedIn = true;
+      el.auth.hidden = true;
+      el.dashboard.hidden = false;
+      el.logout.hidden = false;
+      renderOverview();
+      renderUsers();
+      renderContent();
+      renderSystem();
+      renderAudit();
+      renderStatus();
+      changeTab(state.activeTab);
     });
 
-    document.getElementById('clear-id').addEventListener('click', () => {
-      localStorage.removeItem('adminUserId');
-      state.userId = '';
-      syncState();
+    el.logout.addEventListener('click', () => {
+      state.loggedIn = false;
+      el.auth.hidden = false;
+      el.dashboard.hidden = true;
+      el.logout.hidden = true;
     });
 
-    document.getElementById('load-overview').addEventListener('click', async () => {
-      try {
-        const data = await api('/api/admin/overview');
-        document.getElementById('overview-output').textContent = JSON.stringify(data, null, 2);
-        setStatus('平台指标已刷新。', 'success');
-      } catch (error) {
-        setStatus(error.message || '获取平台总览失败', 'error');
+    el.tabs.forEach(btn => btn.addEventListener('click', () => changeTab(btn.dataset.tab)));
+
+    document.addEventListener('click', event => {
+      const dialogType = event.target.dataset.dialog;
+      if (dialogType) {
+        document.getElementById(`${dialogType}-dialog`).showModal();
+      }
+      const closeType = event.target.dataset.close;
+      if (closeType) {
+        document.getElementById(`${closeType}-dialog`).close();
       }
     });
 
-    document.getElementById('create-asset').addEventListener('click', async () => {
-      try {
-        const name = document.getElementById('asset-name').value || '未命名素材';
-        const type = document.getElementById('asset-type').value;
-        const metaText = document.getElementById('asset-meta').value.trim();
-        const metadata = metaText ? JSON.parse(metaText) : {};
-        const data = await api('/api/admin/assets', { method: 'POST', body: { name, type, metadata } });
-        document.getElementById('asset-output').textContent = JSON.stringify(data, null, 2);
-        setStatus('素材已上传。', 'success');
-      } catch (error) {
-        setStatus(error.message || '上传素材失败', 'error');
-      }
+    document.getElementById('user-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      state.users.push({
+        name: formData.get('name'),
+        role: formData.get('role'),
+        status: formData.get('status'),
+        lastLogin: '刚创建'
+      });
+      renderUsers();
+      event.currentTarget.reset();
+      document.getElementById('user-dialog').close();
+      alert('账号已创建。');
     });
 
-    document.getElementById('create-user').addEventListener('click', async () => {
-      try {
-        const name = document.getElementById('user-name').value || '新用户';
-        const role = document.getElementById('user-role').value;
-        const data = await api('/api/admin/users', { method: 'POST', body: { name, role } });
-        document.getElementById('user-output').textContent = JSON.stringify(data, null, 2);
-        setStatus('账号已创建。', 'success');
-      } catch (error) {
-        setStatus(error.message || '创建账号失败', 'error');
-      }
+    document.getElementById('content-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      state.content.push({
+        title: formData.get('title'),
+        version: formData.get('version'),
+        status: formData.get('status'),
+        audit: '待审核'
+      });
+      renderContent();
+      event.currentTarget.reset();
+      document.getElementById('content-dialog').close();
+      alert('课程已保存，等待审核。');
     });
 
-    document.getElementById('export-progress').addEventListener('click', async () => {
-      try {
-        const data = await api('/api/admin/exports/progress');
-        document.getElementById('export-output').textContent = JSON.stringify(data, null, 2);
-        setStatus('已导出学习进度数据。', 'success');
-      } catch (error) {
-        setStatus(error.message || '导出数据失败', 'error');
-      }
+    document.getElementById('alert-form').addEventListener('submit', event => {
+      event.preventDefault();
+      document.getElementById('alert-dialog').close();
+      alert('公告已发布给所有用户。');
     });
 
-    if (state.userId) {
-      idInput.value = state.userId;
-    }
-    syncState();
+    changeTab('overview');
   </script>
 </body>
 </html>

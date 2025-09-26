@@ -2,499 +2,633 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>教师端 - CodeAdventurers</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>教师端 · Code Adventurers</title>
   <style>
+    :root {
+      --primary: #1d4ed8;
+      --primary-dark: #1e3a8a;
+      --bg: #f5f7fb;
+      --text: #111827;
+      --muted: #6b7280;
+      --border: #dbe2f0;
+      font-family: 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      font-family: 'Microsoft YaHei', system-ui, sans-serif;
-      background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
-      color: #1f2937;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
     header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
       color: #fff;
-      text-align: center;
-      padding: 48px 24px 16px;
+      padding: 32px 24px;
     }
 
     header h1 {
-      margin: 0 0 8px;
-      font-size: 2.4rem;
+      margin: 0 0 10px;
+      font-size: 2rem;
+    }
+
+    header p {
+      margin: 0;
+      opacity: 0.9;
     }
 
     main {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 24px;
+      flex: 1;
+      max-width: 1280px;
+      width: 100%;
+      margin: -48px auto 32px;
+      padding: 0 24px 32px;
       display: grid;
-      gap: 20px;
+      gap: 24px;
     }
-
-    .status {
-      padding: 14px 18px;
-      border-radius: 12px;
-      font-weight: 600;
-      background: rgba(255, 255, 255, 0.7);
-      color: #1d4ed8;
-    }
-
-    .status.error { color: #b91c1c; background: rgba(254, 202, 202, 0.7); }
-    .status.success { color: #047857; background: rgba(204, 251, 241, 0.7); }
 
     .card {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 18px;
-      padding: 20px;
-      box-shadow: 0 16px 30px rgba(45, 55, 72, 0.25);
-      backdrop-filter: blur(12px);
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+      padding: 32px;
     }
 
-    .card h2 {
-      margin-top: 0;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .center { max-width: 420px; margin: 0 auto; }
 
-    label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
+    label { display: block; font-weight: 600; margin-bottom: 6px; }
 
-    input, textarea, select {
+    input, select {
       width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      margin-bottom: 12px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 1rem;
       font-family: inherit;
-      font-size: 0.95rem;
+      transition: border 0.2s ease;
     }
 
-    textarea {
-      min-height: 120px;
-      resize: vertical;
+    input:focus, select:focus {
+      outline: none;
+      border-color: rgba(29, 78, 216, 0.65);
+      box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.18);
     }
 
     button {
-      background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+      appearance: none;
       border: none;
-      border-radius: 999px;
+      border-radius: 12px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
       color: #fff;
       font-weight: 600;
-      padding: 10px 18px;
       cursor: pointer;
-      margin-right: 8px;
-      margin-bottom: 8px;
-      transition: transform 0.2s, box-shadow 0.2s;
-      box-shadow: 0 12px 24px rgba(99, 102, 241, 0.25);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
     }
 
-    button:hover {
+    button:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 18px 28px rgba(99, 102, 241, 0.3);
+      box-shadow: 0 14px 32px rgba(29, 78, 216, 0.25);
     }
 
-    button:disabled {
-      opacity: 0.6;
-      box-shadow: none;
-      transform: none;
-      cursor: not-allowed;
+    .login-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 18px;
     }
 
-    pre {
-      background: #0f172a;
-      color: #e2e8f0;
-      padding: 12px;
-      border-radius: 12px;
-      overflow-x: auto;
-      font-size: 0.85rem;
+    a.link { color: rgba(255, 255, 255, 0.95); text-decoration: none; }
+
+    nav.breadcrumb {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 0.95rem;
+      color: var(--muted);
     }
 
-    .grid {
+    .dashboard {
       display: grid;
-      gap: 20px;
+      grid-template-columns: 260px 1fr;
+      gap: 24px;
     }
 
-    @media (min-width: 960px) {
-      .grid.two-columns {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+    .side-panel {
+      display: grid;
+      gap: 18px;
+    }
+
+    .panel-block {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      background: #f9fbff;
+    }
+
+    .panel-block h3 { margin-top: 0; }
+
+    .quick-actions {
+      display: grid;
+      gap: 12px;
+    }
+
+    .quick-actions button {
+      justify-content: flex-start;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: #fff;
+      color: var(--primary-dark);
+      border: 1px solid rgba(29, 78, 216, 0.35);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 12px 18px;
+      border-radius: 14px 14px 0 0;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .tab[data-active="true"] {
+      background: #fff;
+      border-color: var(--border) var(--border) #fff;
+      color: var(--primary-dark);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel[data-active="true"] { display: grid; gap: 20px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 12px 10px;
+      text-align: left;
+    }
+
+    th { font-weight: 600; color: var(--muted); }
+
+    .stat-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    @media (min-width: 900px) {
+      .stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    .stat-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      background: #f8faff;
+    }
+
+    .empty-state {
+      padding: 36px;
+      border: 2px dashed rgba(148, 163, 184, 0.45);
+      border-radius: 16px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    dialog {
+      border: none;
+      border-radius: 18px;
+      padding: 24px;
+      width: min(540px, 92vw);
+      box-shadow: 0 30px 60px rgba(15, 23, 42, 0.28);
+    }
+
+    dialog::backdrop {
+      background: rgba(15, 23, 42, 0.45);
+    }
+
+    .dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .tag-row { display:flex; flex-wrap:wrap; gap:8px; }
+    .tag { padding:4px 10px; border-radius:999px; background:rgba(29,78,216,0.1); color:var(--primary-dark); font-size:0.85rem; }
+
+    @media (max-width: 1080px) {
+      main { margin-top: -32px; }
+      .dashboard { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>👩‍🏫 CodeAdventurers 教师运营台</h1>
-    <p>管理课程、班级与作品，实时掌握学生学习数据。</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div>
+        <h1>教师教学控制台</h1>
+        <p>课堂排课 → 班级管理 → 布置作业 → 数据复盘，形成完整教学闭环。</p>
+      </div>
+      <button type="button" class="link" data-action="logout" hidden>退出登录</button>
+    </div>
   </header>
+
   <main>
-    <div id="status" class="status" role="status">请先配置教师身份。</div>
+    <section class="card center" data-screen="auth">
+      <h2 style="margin-top:0;">教师登录</h2>
+      <p style="color:var(--muted);margin-bottom:24px;">绑定教学组织后即可管理旗下班级与教学资源。</p>
+      <form id="teacher-login">
+        <label for="teacher-email">邮箱</label>
+        <input id="teacher-email" type="email" placeholder="name@example.com" required />
+        <label for="teacher-password">密码</label>
+        <input id="teacher-password" type="password" placeholder="••••••••" required />
+        <label for="teacher-org">教学组织</label>
+        <select id="teacher-org" required>
+          <option value="">选择组织</option>
+          <option value="org-1">未来编程社</option>
+          <option value="org-2">创新实验室</option>
+        </select>
+        <div class="login-actions">
+          <a class="link" href="/student.html">前往学生端</a>
+          <button type="submit">进入控制台</button>
+        </div>
+      </form>
+    </section>
 
-    <section class="grid two-columns">
-      <article class="card" aria-labelledby="identity-title">
-        <h2 id="identity-title">🔐 教师身份</h2>
-        <label for="teacher-id">用户 ID</label>
-        <input id="teacher-id" type="text" placeholder="teacher-1" />
-        <button id="apply-id">应用身份</button>
-        <button id="forget-id">清除记录</button>
-        <p>当前 ID：<strong id="current-id">未设置</strong></p>
-      </article>
+    <section class="card dashboard" data-screen="dashboard" hidden>
+      <aside class="side-panel">
+        <div class="panel-block">
+          <h3 style="margin-bottom:12px;">教学流程</h3>
+          <ol style="margin:0;padding-left:20px;color:var(--muted);display:grid;gap:6px;font-size:0.95rem;">
+            <li>规划课程与学期目标</li>
+            <li>创建班级并邀请学生</li>
+            <li>布置作业与课堂练习</li>
+            <li>分析数据并调整策略</li>
+          </ol>
+        </div>
+        <div class="panel-block">
+          <h3 style="margin-bottom:12px;">快速操作</h3>
+          <div class="quick-actions">
+            <button type="button" data-dialog="class">➕ 创建新班级</button>
+            <button type="button" data-dialog="assignment">📝 发布作业</button>
+            <button type="button" data-dialog="notice">📢 发送公告</button>
+          </div>
+        </div>
+        <div class="panel-block">
+          <h3 style="margin-bottom:12px;">本周提醒</h3>
+          <ul id="reminder-list" style="margin:0;padding-left:20px;color:var(--muted);display:grid;gap:6px;font-size:0.9rem;"></ul>
+        </div>
+      </aside>
+      <section>
+        <nav class="tabs" role="tablist">
+          <button class="tab" data-tab="overview">教学首页</button>
+          <button class="tab" data-tab="classes">班级管理</button>
+          <button class="tab" data-tab="assignments">作业中心</button>
+          <button class="tab" data-tab="analytics">教学分析</button>
+          <button class="tab" data-tab="resources">资源库</button>
+        </nav>
+        <div class="tab-panels">
+          <div class="tab-panel" data-tab="overview">
+            <section class="stat-grid" id="overview-stats"></section>
+            <section>
+              <h3>最近动态</h3>
+              <table>
+                <thead>
+                  <tr><th>时间</th><th>事件</th><th>涉及对象</th></tr>
+                </thead>
+                <tbody id="activity-table"></tbody>
+              </table>
+            </section>
+          </div>
 
-      <article class="card" aria-labelledby="course-title">
-        <h2 id="course-title">📚 课程管理</h2>
-        <div>
-          <button id="load-courses" disabled>加载课程列表</button>
-          <pre id="courses-output">尚未加载</pre>
-        </div>
-        <div>
-          <label for="course-name">课程名称</label>
-          <input id="course-name" type="text" placeholder="顺序指令进阶" />
-          <label for="course-desc">课程描述</label>
-          <textarea id="course-desc" placeholder="介绍课程目标、适用年级等信息"></textarea>
-          <button id="create-course" disabled>新建课程</button>
-        </div>
-        <div>
-          <label for="chapter-course-id">所属课程 ID</label>
-          <input id="chapter-course-id" type="text" placeholder="course-1" />
-          <label for="chapter-title">章节标题</label>
-          <input id="chapter-title" type="text" placeholder="第二章：条件判断" />
-          <button id="create-chapter" disabled>新增章节</button>
-        </div>
-        <div>
-          <label for="level-chapter-id">章节 ID</label>
-          <input id="level-chapter-id" type="text" placeholder="chapter-1" />
-          <label for="level-definition">关卡定义（JSON）</label>
-          <textarea id="level-definition" spellcheck="false">{
-  "level": {
-    "id": "level-demo",
-    "name": "示例关卡",
-    "width": 3,
-    "height": 3,
-    "tiles": [
-      { "x": 0, "y": 0, "walkable": true },
-      { "x": 1, "y": 0, "walkable": true },
-      { "x": 2, "y": 0, "walkable": true },
-      { "x": 2, "y": 1, "walkable": true, "collectible": "gem" },
-      { "x": 2, "y": 2, "walkable": true }
-    ],
-    "start": { "x": 0, "y": 0, "facing": "east" },
-    "goal": { "reach": { "x": 2, "y": 1 }, "collectibles": 1, "stepLimit": 12 },
-    "bestSteps": 4,
-    "hints": ["向前移动", "拾取宝石", "返回出口"],
-    "comic": "帮助角色拾取宝石并安全返回。",
-    "allowedBlocks": ["MOVE", "TURN_LEFT", "TURN_RIGHT"],
-    "rewards": { "stars": 3, "outfit": null }
-  }
-}</textarea>
-          <button id="create-level" disabled>添加关卡</button>
-        </div>
-      </article>
+          <div class="tab-panel" data-tab="classes">
+            <section>
+              <h3>班级总览</h3>
+              <table>
+                <thead>
+                  <tr><th>班级名称</th><th>学生人数</th><th>平均完成率</th><th>下一节课</th></tr>
+                </thead>
+                <tbody id="class-table"></tbody>
+              </table>
+            </section>
+          </div>
 
-      <article class="card" aria-labelledby="class-title">
-        <h2 id="class-title">🏫 班级管理</h2>
-        <div>
-          <button id="load-progress" disabled>加载班级概览</button>
-          <pre id="progress-output">尚未加载</pre>
-        </div>
-        <div>
-          <label for="student-class-id">班级 ID</label>
-          <input id="student-class-id" type="text" placeholder="class-1" />
-          <label for="student-name">学生姓名</label>
-          <input id="student-name" type="text" placeholder="新同学姓名" />
-          <button id="add-student" disabled>添加学生</button>
-        </div>
-        <div>
-          <label for="assign-class-id">班级 ID</label>
-          <input id="assign-class-id" type="text" placeholder="class-1" />
-          <label for="assign-course-id">课程 ID</label>
-          <input id="assign-course-id" type="text" placeholder="course-1" />
-          <button id="assign-course" disabled>布置课程</button>
-        </div>
-        <div>
-          <label for="hint-class-id">班级 ID</label>
-          <input id="hint-class-id" type="text" placeholder="class-1" />
-          <label for="hint-limit">提示上限</label>
-          <input id="hint-limit" type="number" min="0" value="3" />
-          <button id="update-hint" disabled>更新提示次数</button>
-        </div>
-      </article>
+          <div class="tab-panel" data-tab="assignments">
+            <section>
+              <h3>作业排期</h3>
+              <table>
+                <thead>
+                  <tr><th>作业名称</th><th>发布班级</th><th>截止日期</th><th>提交情况</th></tr>
+                </thead>
+                <tbody id="assignment-table"></tbody>
+              </table>
+            </section>
+          </div>
 
-      <article class="card" aria-labelledby="analytics-title">
-        <h2 id="analytics-title">📊 学习数据</h2>
-        <div>
-          <button id="load-heatmap" disabled>概念热力图</button>
-          <pre id="heatmap-output">尚未加载</pre>
-        </div>
-        <div>
-          <label for="replay-student-id">学生 ID</label>
-          <input id="replay-student-id" type="text" placeholder="student-1" />
-          <label for="replay-level-id">关卡 ID</label>
-          <input id="replay-level-id" type="text" placeholder="level-1" />
-          <button id="load-replay" disabled>查看回放日志</button>
-          <pre id="replay-output">尚未加载</pre>
-        </div>
-      </article>
+          <div class="tab-panel" data-tab="analytics">
+            <section>
+              <h3>学习进度分析</h3>
+              <div class="stat-grid" id="analytics-cards"></div>
+            </section>
+            <section>
+              <h3>风险学生提醒</h3>
+              <div id="risk-list" class="empty-state"></div>
+            </section>
+          </div>
 
-      <article class="card" aria-labelledby="works-title">
-        <h2 id="works-title">📝 作品审核</h2>
-        <div>
-          <button id="load-works" disabled>待审核作品</button>
-          <pre id="works-output">尚未加载</pre>
+          <div class="tab-panel" data-tab="resources">
+            <section>
+              <h3>教学资源</h3>
+              <table>
+                <thead>
+                  <tr><th>资源名称</th><th>类型</th><th>适用年级</th><th>操作</th></tr>
+                </thead>
+                <tbody id="resource-table"></tbody>
+              </table>
+            </section>
+          </div>
         </div>
-        <div>
-          <label for="review-work-id">作品 ID</label>
-          <input id="review-work-id" type="text" placeholder="work-..." />
-          <select id="review-status">
-            <option value="approved">通过</option>
-            <option value="rejected">驳回</option>
-          </select>
-          <button id="submit-review" disabled>提交审核</button>
-        </div>
-      </article>
+      </section>
     </section>
   </main>
-  <script type="module">
-    const statusBox = document.getElementById('status');
-    const buttons = Array.from(document.querySelectorAll('button')).filter((btn) => !['apply-id', 'forget-id'].includes(btn.id));
+
+  <dialog id="class-dialog">
+    <div class="dialog-header">
+      <h3>创建班级</h3>
+      <button type="button" data-close="class">×</button>
+    </div>
+    <form id="class-form" style="display:grid;gap:14px;">
+      <label>班级名称
+        <input name="name" required />
+      </label>
+      <label>年级
+        <select name="grade" required>
+          <option value="">选择年级</option>
+          <option value="G5">五年级</option>
+          <option value="G6">六年级</option>
+        </select>
+      </label>
+      <label>开课时间
+        <input name="start" type="date" required />
+      </label>
+      <div style="display:flex;justify-content:flex-end;gap:12px;">
+        <button type="button" data-close="class" style="background:#e5e7eb;color:var(--text);">取消</button>
+        <button type="submit">创建</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="assignment-dialog">
+    <div class="dialog-header">
+      <h3>发布作业</h3>
+      <button type="button" data-close="assignment">×</button>
+    </div>
+    <form id="assignment-form" style="display:grid;gap:14px;">
+      <label>作业标题
+        <input name="title" required />
+      </label>
+      <label>选择班级
+        <select name="class" required></select>
+      </label>
+      <label>截止日期
+        <input type="date" name="deadline" required />
+      </label>
+      <label>作业说明
+        <textarea name="description" style="border:1px solid var(--border);border-radius:12px;padding:12px;min-height:120px;"></textarea>
+      </label>
+      <div style="display:flex;justify-content:flex-end;gap:12px;">
+        <button type="button" data-close="assignment" style="background:#e5e7eb;color:var(--text);">取消</button>
+        <button type="submit">发布</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="notice-dialog">
+    <div class="dialog-header">
+      <h3>发送公告</h3>
+      <button type="button" data-close="notice">×</button>
+    </div>
+    <form id="notice-form" style="display:grid;gap:14px;">
+      <label>发送范围
+        <select name="scope" required>
+          <option value="all">全部班级</option>
+          <option value="selected">指定班级</option>
+        </select>
+      </label>
+      <label>公告内容
+        <textarea name="content" style="border:1px solid var(--border);border-radius:12px;padding:12px;min-height:120px;" required></textarea>
+      </label>
+      <div style="display:flex;justify-content:flex-end;gap:12px;">
+        <button type="button" data-close="notice" style="background:#e5e7eb;color:var(--text);">取消</button>
+        <button type="submit">发送</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
     const state = {
-      userId: localStorage.getItem('teacherUserId') || '',
+      loggedIn: false,
+      activeTab: 'overview',
+      reminders: [
+        '周三 16:00 班会需要总结阶段成果',
+        '为 5A 班设置下一次实战演练任务',
+        '更新课程资源库添加 AI 模块示例'
+      ],
+      stats: [
+        { label: '本周上课', value: '8 节' },
+        { label: '布置作业', value: '5 份' },
+        { label: '平均完成率', value: '86%' }
+      ],
+      activities: [
+        { time: '今天 09:20', event: '批阅作业《循环挑战》', target: '5A 班' },
+        { time: '昨天 21:05', event: '发布公告：明日课堂提醒', target: '全体学生' },
+        { time: '本周一 18:30', event: '新增班级「创新实验组」', target: '实验室' }
+      ],
+      classes: [
+        { name: '5A 编程启航', size: 28, completion: '92%', next: '周四 15:30' },
+        { name: '创新实验组', size: 16, completion: '78%', next: '周五 10:00' },
+        { name: '家长研学营', size: 32, completion: '—', next: '周三 19:30' }
+      ],
+      assignments: [
+        { title: '循环挑战', clazz: '5A 编程启航', deadline: '3 月 20 日', status: '24/28 已交' },
+        { title: 'AI 伦理讨论', clazz: '创新实验组', deadline: '3 月 22 日', status: '进行中' },
+        { title: '家庭编程小实验', clazz: '家长研学营', deadline: '3 月 25 日', status: '未开启' }
+      ],
+      analytics: [
+        { label: '整体完成率', value: '86%', hint: '较上周提升 4%' },
+        { label: '平均得分', value: '88/100', hint: '需要关注实验题' },
+        { label: '互动次数', value: '142 次', hint: '课堂互动保持活跃' }
+      ],
+      risks: [
+        { name: '林小宇', reason: '近三次作业未提交', action: '安排一对一辅导' },
+        { name: '王晨曦', reason: '课堂出勤率 60%', action: '联系家长沟通' }
+      ],
+      resources: [
+        { name: '机器人迷宫示例', type: '课件', grade: '五年级' },
+        { name: '条件分支练习题', type: '练习册', grade: '六年级' },
+        { name: '家庭协作指南', type: '家校指南', grade: '通用' }
+      ]
     };
 
-    const idInput = document.getElementById('teacher-id');
-    const currentId = document.getElementById('current-id');
+    const elements = {
+      auth: document.querySelector('[data-screen="auth"]'),
+      dashboard: document.querySelector('[data-screen="dashboard"]'),
+      logout: document.querySelector('[data-action="logout"]'),
+      tabs: document.querySelectorAll('.tab'),
+      panels: document.querySelectorAll('.tab-panel'),
+      reminders: document.getElementById('reminder-list'),
+      overviewStats: document.getElementById('overview-stats'),
+      activityTable: document.getElementById('activity-table'),
+      classTable: document.getElementById('class-table'),
+      assignmentTable: document.getElementById('assignment-table'),
+      analyticsCards: document.getElementById('analytics-cards'),
+      riskList: document.getElementById('risk-list'),
+      resourceTable: document.getElementById('resource-table'),
+      classDialog: document.getElementById('class-dialog'),
+      assignmentDialog: document.getElementById('assignment-dialog'),
+      noticeDialog: document.getElementById('notice-dialog'),
+      assignmentClassSelect: document.querySelector('#assignment-form select[name="class"]')
+    };
 
-    function setStatus(message, type = 'info') {
-      statusBox.textContent = message;
-      statusBox.className = `status ${type === 'error' ? 'error' : type === 'success' ? 'success' : ''}`.trim() || 'status';
+    function renderReminders() {
+      elements.reminders.innerHTML = state.reminders.map(item => `<li>${item}</li>`).join('');
     }
 
-    function syncState() {
-      const enabled = Boolean(state.userId);
-      currentId.textContent = enabled ? state.userId : '未设置';
-      for (const btn of buttons) {
-        btn.disabled = !enabled;
-      }
-      if (enabled) {
-        setStatus(`已启用教师身份 ${state.userId}。`, 'success');
+    function renderOverview() {
+      elements.overviewStats.innerHTML = state.stats.map(stat => `<article class="stat-card"><strong style="font-size:1.3rem;">${stat.value}</strong><p style="margin:6px 0 0;color:var(--muted);">${stat.label}</p></article>`).join('');
+      elements.activityTable.innerHTML = state.activities.map(row => `<tr><td>${row.time}</td><td>${row.event}</td><td>${row.target}</td></tr>`).join('');
+    }
+
+    function renderClasses() {
+      elements.classTable.innerHTML = state.classes.map(clazz => `<tr><td>${clazz.name}</td><td>${clazz.size}</td><td>${clazz.completion}</td><td>${clazz.next}</td></tr>`).join('');
+      elements.assignmentClassSelect.innerHTML = state.classes.map(clazz => `<option value="${clazz.name}">${clazz.name}</option>`).join('');
+    }
+
+    function renderAssignments() {
+      elements.assignmentTable.innerHTML = state.assignments.map(item => `<tr><td>${item.title}</td><td>${item.clazz}</td><td>${item.deadline}</td><td>${item.status}</td></tr>`).join('');
+    }
+
+    function renderAnalytics() {
+      elements.analyticsCards.innerHTML = state.analytics.map(card => `<article class="stat-card"><strong style="font-size:1.3rem;">${card.value}</strong><p style="margin:6px 0 0;color:var(--muted);">${card.label}</p><span class="tag" style="margin-top:10px;">${card.hint}</span></article>`).join('');
+      if (state.risks.length === 0) {
+        elements.riskList.classList.add('empty-state');
+        elements.riskList.innerHTML = '暂无风险学生，继续保持~';
       } else {
-        setStatus('请先配置教师身份。', 'info');
+        elements.riskList.classList.remove('empty-state');
+        elements.riskList.innerHTML = state.risks.map(risk => `<article class="panel-block" style="background:#fff;">
+          <strong>${risk.name}</strong>
+          <p style="margin:4px 0 0;color:var(--muted);">${risk.reason}</p>
+          <span class="tag" style="margin-top:8px;">建议：${risk.action}</span>
+        </article>`).join('');
       }
     }
 
-    function authHeaders() {
-      return state.userId ? { 'x-user-id': state.userId } : {};
+    function renderResources() {
+      elements.resourceTable.innerHTML = state.resources.map(res => `<tr><td>${res.name}</td><td>${res.type}</td><td>${res.grade}</td><td><button type="button" style="background:#e5e7eb;color:var(--text);">下载</button></td></tr>`).join('');
     }
 
-    async function api(path, options = {}) {
-      const opts = { method: 'GET', ...options };
-      opts.headers = { 'Content-Type': 'application/json', ...authHeaders(), ...(options.headers || {}) };
-      if (options.body && typeof options.body !== 'string') {
-        opts.body = JSON.stringify(options.body);
-      }
-      const response = await fetch(path, opts);
-      const text = await response.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (error) {
-        data = text;
-      }
-      if (!response.ok) {
-        throw new Error(data?.message || response.statusText);
-      }
-      return data;
+    function changeTab(tab) {
+      state.activeTab = tab;
+      elements.tabs.forEach(btn => {
+        const active = btn.dataset.tab === tab;
+        btn.dataset.active = String(active);
+        btn.setAttribute('aria-selected', active);
+      });
+      elements.panels.forEach(panel => {
+        const active = panel.dataset.tab === tab;
+        panel.dataset.active = String(active);
+      });
     }
 
-    document.getElementById('apply-id').addEventListener('click', () => {
-      const value = idInput.value.trim() || 'teacher-1';
-      state.userId = value;
-      localStorage.setItem('teacherUserId', value);
-      syncState();
+    document.getElementById('teacher-login').addEventListener('submit', event => {
+      event.preventDefault();
+      state.loggedIn = true;
+      elements.auth.hidden = true;
+      elements.dashboard.hidden = false;
+      elements.logout.hidden = false;
+      renderReminders();
+      renderOverview();
+      renderClasses();
+      renderAssignments();
+      renderAnalytics();
+      renderResources();
+      changeTab(state.activeTab);
     });
 
-    document.getElementById('forget-id').addEventListener('click', () => {
-      localStorage.removeItem('teacherUserId');
-      state.userId = '';
-      syncState();
+    elements.logout.addEventListener('click', () => {
+      state.loggedIn = false;
+      elements.auth.hidden = false;
+      elements.dashboard.hidden = true;
+      elements.logout.hidden = true;
     });
 
-    document.getElementById('load-courses').addEventListener('click', async () => {
-      try {
-        const data = await api('/api/teacher/courses');
-        document.getElementById('courses-output').textContent = JSON.stringify(data.courses, null, 2);
-        setStatus('课程列表已更新。', 'success');
-      } catch (error) {
-        setStatus(error.message || '加载课程失败', 'error');
+    elements.tabs.forEach(btn => btn.addEventListener('click', () => changeTab(btn.dataset.tab)));
+
+    document.addEventListener('click', event => {
+      const dialogType = event.target.dataset.dialog;
+      if (dialogType) {
+        document.getElementById(`${dialogType}-dialog`).showModal();
+      }
+      const closeType = event.target.dataset.close;
+      if (closeType) {
+        document.getElementById(`${closeType}-dialog`).close();
       }
     });
 
-    document.getElementById('create-course').addEventListener('click', async () => {
-      try {
-        const name = document.getElementById('course-name').value || '未命名课程';
-        const description = document.getElementById('course-desc').value || '';
-        const data = await api('/api/teacher/courses', { method: 'POST', body: { name, description } });
-        document.getElementById('courses-output').textContent = JSON.stringify(data, null, 2);
-        setStatus('课程已创建。', 'success');
-      } catch (error) {
-        setStatus(error.message || '创建课程失败', 'error');
-      }
+    document.getElementById('class-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const name = formData.get('name');
+      const size = 0;
+      state.classes.push({ name, size, completion: '0%', next: formData.get('start') });
+      renderClasses();
+      event.currentTarget.reset();
+      document.getElementById('class-dialog').close();
+      alert('班级已创建，记得邀请学生加入。');
     });
 
-    document.getElementById('create-chapter').addEventListener('click', async () => {
-      try {
-        const courseId = document.getElementById('chapter-course-id').value.trim();
-        const title = document.getElementById('chapter-title').value || '未命名章节';
-        if (!courseId) {
-          setStatus('请输入课程 ID。', 'error');
-          return;
-        }
-        const data = await api(`/api/teacher/courses/${courseId}/chapters`, { method: 'POST', body: { title } });
-        document.getElementById('courses-output').textContent = JSON.stringify(data, null, 2);
-        setStatus('章节已创建。', 'success');
-      } catch (error) {
-        setStatus(error.message || '创建章节失败', 'error');
-      }
+    document.getElementById('assignment-form').addEventListener('submit', event => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      state.assignments.push({
+        title: formData.get('title'),
+        clazz: formData.get('class'),
+        deadline: formData.get('deadline'),
+        status: '未开始'
+      });
+      renderAssignments();
+      event.currentTarget.reset();
+      document.getElementById('assignment-dialog').close();
+      alert('作业发布成功！');
     });
 
-    document.getElementById('create-level').addEventListener('click', async () => {
-      try {
-        const chapterId = document.getElementById('level-chapter-id').value.trim();
-        if (!chapterId) {
-          setStatus('请输入章节 ID。', 'error');
-          return;
-        }
-        const text = document.getElementById('level-definition').value.trim();
-        const payload = text ? JSON.parse(text) : null;
-        if (!payload?.level?.id) {
-          setStatus('JSON 中缺少 level.id。', 'error');
-          return;
-        }
-        const data = await api(`/api/teacher/chapters/${chapterId}/levels`, { method: 'POST', body: payload });
-        setStatus('关卡已添加到章节。', 'success');
-        document.getElementById('courses-output').textContent = JSON.stringify(data, null, 2);
-      } catch (error) {
-        setStatus(error.message || '创建关卡失败', 'error');
-      }
+    document.getElementById('notice-form').addEventListener('submit', event => {
+      event.preventDefault();
+      document.getElementById('notice-dialog').close();
+      alert('公告已发送。');
     });
 
-    document.getElementById('load-progress').addEventListener('click', async () => {
-      try {
-        const data = await api('/api/teacher/analytics/progress');
-        document.getElementById('progress-output').textContent = JSON.stringify(data.classes, null, 2);
-        setStatus('班级进度已获取。', 'success');
-      } catch (error) {
-        setStatus(error.message || '加载班级进度失败', 'error');
-      }
-    });
-
-    document.getElementById('add-student').addEventListener('click', async () => {
-      try {
-        const classId = document.getElementById('student-class-id').value.trim();
-        const name = document.getElementById('student-name').value || '新同学';
-        if (!classId) {
-          setStatus('请输入班级 ID。', 'error');
-          return;
-        }
-        const data = await api(`/api/teacher/classes/${classId}/students`, { method: 'POST', body: { name } });
-        document.getElementById('progress-output').textContent = JSON.stringify(data, null, 2);
-        setStatus('学生已加入班级。', 'success');
-      } catch (error) {
-        setStatus(error.message || '添加学生失败', 'error');
-      }
-    });
-
-    document.getElementById('assign-course').addEventListener('click', async () => {
-      try {
-        const classId = document.getElementById('assign-class-id').value.trim();
-        const courseId = document.getElementById('assign-course-id').value.trim();
-        if (!classId || !courseId) {
-          setStatus('请输入班级 ID 和课程 ID。', 'error');
-          return;
-        }
-        const data = await api(`/api/teacher/classes/${classId}/assign-course`, { method: 'POST', body: { courseId } });
-        document.getElementById('progress-output').textContent = JSON.stringify(data, null, 2);
-        setStatus('课程已布置给班级。', 'success');
-      } catch (error) {
-        setStatus(error.message || '布置课程失败', 'error');
-      }
-    });
-
-    document.getElementById('update-hint').addEventListener('click', async () => {
-      try {
-        const classId = document.getElementById('hint-class-id').value.trim();
-        const hintLimit = Number(document.getElementById('hint-limit').value || 0);
-        if (!classId) {
-          setStatus('请输入班级 ID。', 'error');
-          return;
-        }
-        const data = await api(`/api/teacher/classes/${classId}/hint-limit`, { method: 'PATCH', body: { hintLimit } });
-        document.getElementById('progress-output').textContent = JSON.stringify(data, null, 2);
-        setStatus('提示次数已更新。', 'success');
-      } catch (error) {
-        setStatus(error.message || '更新提示次数失败', 'error');
-      }
-    });
-
-    document.getElementById('load-heatmap').addEventListener('click', async () => {
-      try {
-        const data = await api('/api/teacher/analytics/heatmap');
-        document.getElementById('heatmap-output').textContent = JSON.stringify(data.heatmap, null, 2);
-        setStatus('热力图数据已加载。', 'success');
-      } catch (error) {
-        setStatus(error.message || '获取热力图失败', 'error');
-      }
-    });
-
-    document.getElementById('load-replay').addEventListener('click', async () => {
-      try {
-        const studentId = document.getElementById('replay-student-id').value.trim();
-        const levelId = document.getElementById('replay-level-id').value.trim();
-        if (!studentId || !levelId) {
-          setStatus('请输入学生 ID 和关卡 ID。', 'error');
-          return;
-        }
-        const data = await api(`/api/teacher/analytics/replays/${studentId}/${levelId}`);
-        document.getElementById('replay-output').textContent = JSON.stringify(data.replay, null, 2);
-        setStatus('已获取通关回放。', 'success');
-      } catch (error) {
-        setStatus(error.message || '获取回放失败', 'error');
-      }
-    });
-
-    document.getElementById('load-works').addEventListener('click', async () => {
-      try {
-        const data = await api('/api/teacher/works/pending');
-        document.getElementById('works-output').textContent = JSON.stringify(data.works, null, 2);
-        setStatus('待审核作品已加载。', 'success');
-      } catch (error) {
-        setStatus(error.message || '获取待审核作品失败', 'error');
-      }
-    });
-
-    document.getElementById('submit-review').addEventListener('click', async () => {
-      try {
-        const workId = document.getElementById('review-work-id').value.trim();
-        const statusValue = document.getElementById('review-status').value;
-        if (!workId) {
-          setStatus('请输入作品 ID。', 'error');
-          return;
-        }
-        const data = await api(`/api/teacher/works/${workId}/review`, { method: 'POST', body: { status: statusValue } });
-        document.getElementById('works-output').textContent = JSON.stringify(data, null, 2);
-        setStatus('审核结果已提交。', 'success');
-      } catch (error) {
-        setStatus(error.message || '审核失败', 'error');
-      }
-    });
-
-    if (state.userId) {
-      idInput.value = state.userId;
-    }
-    syncState();
+    changeTab('overview');
   </script>
 </body>
 </html>

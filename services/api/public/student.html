@@ -2,710 +2,706 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>学生端 - CodeAdventurers</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>学生端 · Code Adventurers</title>
   <style>
     :root {
+      --primary: #4f46e5;
+      --primary-dark: #3730a3;
+      --accent: #22d3ee;
+      --bg: #f4f6fb;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #e2e8f0;
+      font-family: 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
       color-scheme: light;
-      font-family: 'Microsoft YaHei', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f5f7ff;
+    }
+
+    * {
+      box-sizing: border-box;
     }
 
     body {
       margin: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      color: #1f2937;
-    }
-
-    main {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 24px;
+      display: flex;
+      flex-direction: column;
     }
 
     header {
+      background: linear-gradient(120deg, var(--primary) 0%, var(--primary-dark) 100%);
       color: #fff;
-      text-align: center;
-      padding: 48px 24px 24px;
+      padding: 32px 24px;
     }
 
     header h1 {
-      font-size: 2.6rem;
-      margin-bottom: 8px;
+      margin: 0 0 8px;
+      font-size: 2rem;
+      letter-spacing: 0.04em;
     }
 
     header p {
       margin: 0;
-      opacity: 0.9;
-      font-size: 1.05rem;
+      opacity: 0.85;
     }
 
-    .card-grid {
+    main {
+      flex: 1;
+      max-width: 1280px;
+      width: 100%;
+      margin: -48px auto 32px;
+      padding: 0 24px 32px;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-      margin-bottom: 24px;
+      gap: 24px;
     }
 
     .card {
-      background: rgba(255, 255, 255, 0.95);
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 16px 40px rgba(46, 56, 77, 0.15);
-      backdrop-filter: blur(8px);
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+      padding: 32px;
     }
 
-    .card h2 {
-      margin-top: 0;
-      font-size: 1.2rem;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    fieldset {
-      border: 1px solid rgba(102, 126, 234, 0.3);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-
-    fieldset legend {
-      font-weight: 600;
-      color: #4c51bf;
+    .center {
+      max-width: 420px;
+      margin: 0 auto;
     }
 
     label {
       display: block;
-      font-size: 0.9rem;
+      font-weight: 600;
       margin-bottom: 6px;
     }
 
-    input, textarea, select {
+    input, select {
       width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid rgba(79, 70, 229, 0.2);
-      margin-bottom: 12px;
-      font-size: 0.95rem;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 1rem;
       font-family: inherit;
+      transition: border 0.2s ease;
     }
 
-    textarea {
-      min-height: 120px;
-      resize: vertical;
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
     }
 
     button {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      appearance: none;
       border: none;
       border-radius: 999px;
+      padding: 12px 22px;
+      background: linear-gradient(120deg, var(--primary) 0%, var(--primary-dark) 100%);
       color: #fff;
       font-weight: 600;
-      padding: 10px 20px;
+      font-size: 1rem;
       cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
     }
 
-    button:hover {
+    button:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 16px 24px rgba(102, 126, 234, 0.35);
+      box-shadow: 0 16px 30px rgba(79, 70, 229, 0.22);
     }
 
     button:disabled {
-      opacity: 0.6;
+      opacity: 0.55;
       cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
     }
 
-    .status {
-      padding: 12px 16px;
-      border-radius: 12px;
-      margin-bottom: 16px;
-      font-weight: 500;
+    .login-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 18px;
     }
 
-    .status.info { background: rgba(59, 130, 246, 0.12); color: #1d4ed8; }
-    .status.success { background: rgba(16, 185, 129, 0.12); color: #047857; }
-    .status.error { background: rgba(239, 68, 68, 0.12); color: #b91c1c; }
+    .link {
+      color: var(--primary);
+      font-size: 0.95rem;
+      text-decoration: none;
+    }
 
-    .levels {
+    .dashboard {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: 280px 1fr;
+      gap: 24px;
+    }
+
+    .summary-card {
+      display: grid;
+      gap: 18px;
+    }
+
+    .stage-list {
+      display: grid;
       gap: 12px;
     }
 
-    .level {
-      border: 1px solid rgba(99, 102, 241, 0.2);
-      border-radius: 12px;
-      padding: 12px;
-      background: #f9f9ff;
+    .stage-item {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: grid;
+      gap: 6px;
+      background: #f9fafc;
+    }
+
+    .stage-item[data-active="true"] {
+      border-color: var(--primary);
+      background: rgba(79, 70, 229, 0.08);
+    }
+
+    .stage-item strong {
+      font-size: 1.05rem;
+    }
+
+    .levels-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .level-card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+      transition: transform 0.2s ease, border 0.2s ease;
       cursor: pointer;
-      transition: transform 0.2s, border 0.2s;
+      position: relative;
     }
 
-    .level:hover {
+    .level-card:hover {
       transform: translateY(-2px);
-      border-color: rgba(99, 102, 241, 0.6);
+      border-color: rgba(79, 70, 229, 0.7);
     }
 
-    .level[data-status="completed"] {
+    .level-card[data-status="completed"] {
       border-color: rgba(16, 185, 129, 0.6);
       background: #ecfdf5;
     }
 
-    .level[data-status="locked"] {
-      opacity: 0.65;
+    .level-card[data-status="locked"] {
+      opacity: 0.55;
       cursor: not-allowed;
     }
 
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
+    .status-pill {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 4px 10px;
       border-radius: 999px;
-      padding: 2px 8px;
       font-size: 0.75rem;
       background: rgba(79, 70, 229, 0.12);
-      color: #4c51bf;
+      color: var(--primary-dark);
     }
 
-    .stack {
+    .tabs {
       display: flex;
-      flex-direction: column;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 12px 18px;
+      border-radius: 14px 14px 0 0;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .tab[data-active="true"] {
+      background: #fff;
+      border-color: var(--border) var(--border) #fff var(--border);
+      color: var(--primary-dark);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel[data-active="true"] {
+      display: grid;
+      gap: 18px;
+    }
+
+    .grid-2 {
+      display: grid;
+      gap: 18px;
+    }
+
+    @media (min-width: 900px) {
+      .grid-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    .achievement-list {
+      display: grid;
       gap: 12px;
     }
 
-    pre {
-      background: #1f2937;
-      color: #f8fafc;
-      padding: 12px;
+    .achievement {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      background: linear-gradient(120deg, rgba(34, 211, 238, 0.14), rgba(79, 70, 229, 0.08));
+    }
+
+    .challenge-details {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      display: grid;
+      gap: 12px;
+      background: #f8fafc;
+    }
+
+    textarea {
+      width: 100%;
       border-radius: 12px;
-      overflow-x: auto;
+      border: 1px solid var(--border);
+      padding: 12px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      min-height: 140px;
+      resize: vertical;
+    }
+
+    .settings-trigger {
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      padding: 10px 18px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    dialog {
+      border: none;
+      border-radius: 20px;
+      padding: 24px;
+      width: min(520px, 90vw);
+      box-shadow: 0 30px 60px rgba(15, 23, 42, 0.25);
+    }
+
+    dialog::backdrop {
+      background: rgba(15, 23, 42, 0.45);
+    }
+
+    .dialog-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .dialog-header h3 {
+      margin: 0;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      border-radius: 999px;
+      background: rgba(79, 70, 229, 0.12);
+      color: var(--primary-dark);
+      padding: 4px 12px;
       font-size: 0.85rem;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
+    .empty-state {
+      padding: 36px;
+      border: 2px dashed rgba(148, 163, 184, 0.45);
+      border-radius: 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.95rem;
     }
 
-    table th, table td {
-      padding: 8px 10px;
-      border-bottom: 1px solid rgba(203, 213, 225, 0.6);
-      text-align: left;
-    }
+    @media (max-width: 1080px) {
+      main {
+        margin-top: -32px;
+      }
 
-    table tbody tr:hover {
-      background: rgba(99, 102, 241, 0.08);
-    }
-
-    details summary {
-      cursor: pointer;
-      font-weight: 600;
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>🎮 CodeAdventurers 学生端</h1>
-    <p>登录 → 查看冒险地图 → 运行指令 → 提交结算，完成完整学习闭环。</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;">
+      <div>
+        <h1>Code Adventurers · 学生学习空间</h1>
+        <p>登录 → 选择关卡 → 挑战任务 → 提交结算，循序渐进完成冒险旅程。</p>
+      </div>
+      <button type="button" class="settings-trigger" data-action="open-settings" hidden>个人设置</button>
+    </div>
   </header>
+
   <main>
-    <div id="status" class="status info" role="status">请先完成登录。</div>
-    <section class="card-grid">
-      <article class="card" aria-labelledby="auth-title">
-        <h2 id="auth-title">🔐 登录与身份</h2>
-        <fieldset>
-          <legend>游客体验</legend>
-          <label for="guest-name">昵称（可选）</label>
-          <input id="guest-name" type="text" placeholder="例如：小奇" />
-          <button id="guest-login">🚀 游客一键体验</button>
-        </fieldset>
-        <fieldset>
-          <legend>班级邀请码登录</legend>
-          <label for="class-name">学生姓名</label>
-          <input id="class-name" type="text" placeholder="学生姓名" />
-          <label for="class-code">班级邀请码</label>
-          <input id="class-code" type="text" placeholder="例如：CA-CLASS-1" />
-          <button id="class-login">📘 进入班级</button>
-        </fieldset>
-        <fieldset>
-          <legend>当前身份</legend>
-          <div class="stack">
-            <div>用户 ID：<span id="current-user">未登录</span></div>
-            <button id="logout" disabled>退出登录</button>
+    <section class="card center" data-screen="auth">
+      <h2 style="margin-top:0;">学生登录</h2>
+      <p style="color:var(--muted);margin-bottom:24px;">使用班级邀请码登录，系统会自动恢复你的冒险进度。</p>
+      <form id="login-form">
+        <label for="student-id">学生账号</label>
+        <input id="student-id" name="studentId" placeholder="例如：stu_2108" required />
+        <label for="class-code">班级邀请码</label>
+        <input id="class-code" name="classCode" placeholder="例如：CODE-2024" required />
+        <label for="role">角色</label>
+        <select id="role" name="role">
+          <option value="student">学生</option>
+          <option value="assistant">助教</option>
+        </select>
+        <div class="login-actions">
+          <a class="link" href="/teacher.html">切换教师端</a>
+          <button type="submit">进入冒险</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card dashboard" data-screen="dashboard" hidden>
+      <aside class="summary-card">
+        <div>
+          <h3 style="margin:0 0 12px;">冒险流程</h3>
+          <div class="stage-list" id="stage-list"></div>
+        </div>
+        <div>
+          <h3 style="margin:0 0 12px;">当前关卡</h3>
+          <div class="levels-list" id="levels-list"></div>
+        </div>
+      </aside>
+      <section>
+        <nav class="tabs" role="tablist">
+          <button class="tab" role="tab" data-tab="overview">学习首页</button>
+          <button class="tab" role="tab" data-tab="adventure">冒险地图</button>
+          <button class="tab" role="tab" data-tab="challenge">关卡挑战</button>
+          <button class="tab" role="tab" data-tab="achievements">成就勋章</button>
+        </nav>
+        <div class="tab-panels">
+          <div class="tab-panel" data-tab="overview">
+            <div class="grid-2">
+              <section>
+                <h3>今日待办</h3>
+                <ul id="todo-list" style="margin:0;padding-left:20px;display:grid;gap:8px;"></ul>
+              </section>
+              <section>
+                <h3>学习统计</h3>
+                <div class="chip-row" id="stats-row"></div>
+              </section>
+            </div>
+            <section>
+              <h3>我的成就</h3>
+              <div class="achievement-list" id="achievement-overview"></div>
+            </section>
           </div>
-        </fieldset>
-      </article>
 
-      <article class="card" aria-labelledby="map-title">
-        <h2 id="map-title">🗺️ 冒险地图</h2>
-        <div class="stack">
-          <button id="load-map" disabled>刷新章节与关卡</button>
-          <div id="chapters" class="stack" aria-live="polite"></div>
-        </div>
-      </article>
+          <div class="tab-panel" data-tab="adventure">
+            <section>
+              <h3>冒险地图</h3>
+              <p style="color:var(--muted);margin-top:-4px;">选择一个关卡开始挑战。完成前一关后将自动解锁下一关。</p>
+              <div class="levels-list" id="map-levels"></div>
+            </section>
+          </div>
 
-      <article class="card" aria-labelledby="prep-title">
-        <h2 id="prep-title">📘 关卡准备</h2>
-        <div class="stack">
-          <div>已选择关卡：<span id="selected-level">尚未选择</span></div>
-          <button id="load-prep" disabled>查看关卡详情</button>
-          <pre id="prep-info" aria-live="polite">请选择关卡后查看胜利条件与奖励。</pre>
-          <button id="request-hint" disabled>💡 请求提示</button>
-          <pre id="hint-info">提示将在此处展示。</pre>
-        </div>
-      </article>
+          <div class="tab-panel" data-tab="challenge">
+            <section class="challenge-details" id="challenge-container"></section>
+          </div>
 
-      <article class="card" aria-labelledby="run-title">
-        <h2 id="run-title">🧩 程序运行与结算</h2>
-        <div class="stack">
-          <label for="program-input">指令数组（JSON）</label>
-          <textarea id="program-input" spellcheck="false">[
-  { "type": "MOVE" },
-  { "type": "MOVE" },
-  { "type": "TURN_RIGHT" },
-  { "type": "MOVE" }
-]</textarea>
-          <button id="run-program" disabled>▶️ 模拟运行</button>
-          <pre id="run-result">运行结果将在此处展示。</pre>
-          <fieldset>
-            <legend>结算数据</legend>
-            <label for="result-stars">星级（0-3）</label>
-            <input id="result-stars" type="number" min="0" max="3" value="3" />
-            <label for="result-steps">步数</label>
-            <input id="result-steps" type="number" min="0" value="3" />
-            <label for="result-hints">使用提示次数</label>
-            <input id="result-hints" type="number" min="0" value="0" />
-            <label for="result-duration">耗时（秒）</label>
-            <input id="result-duration" type="number" min="0" value="30" />
-            <button id="submit-result" disabled>🏁 提交结算</button>
-          </fieldset>
+          <div class="tab-panel" data-tab="achievements">
+            <section>
+              <h3>勋章墙</h3>
+              <div class="achievement-list" id="achievement-list"></div>
+            </section>
+          </div>
         </div>
-      </article>
-
-      <article class="card" aria-labelledby="profile-title">
-        <h2 id="profile-title">🎭 角色与设置</h2>
-        <div class="stack">
-          <button id="load-avatar" disabled>查看当前装扮</button>
-          <pre id="avatar-info">未加载</pre>
-          <label for="equip-input">切换装扮（输入已解锁 ID）</label>
-          <input id="equip-input" type="text" placeholder="starter-cape" />
-          <button id="equip-submit" disabled>更换装扮</button>
-          <button id="load-settings" disabled>读取设置</button>
-          <pre id="settings-info">未加载</pre>
-          <label for="volume-input">音量 0-1</label>
-          <input id="volume-input" type="number" min="0" max="1" step="0.1" />
-          <label for="language-input">语言</label>
-          <input id="language-input" type="text" placeholder="zh-CN" />
-          <button id="save-settings" disabled>保存设置</button>
-          <button id="reset-progress" disabled>⚠️ 重置进度</button>
-        </div>
-      </article>
-
-      <article class="card" aria-labelledby="sandbox-title">
-        <h2 id="sandbox-title">🛠️ 沙盒创作与作品</h2>
-        <div class="stack">
-          <button id="load-sandbox" disabled>获取沙盒状态</button>
-          <pre id="sandbox-info">未加载</pre>
-          <label for="sandbox-title-input">新建作品标题</label>
-          <input id="sandbox-title-input" type="text" placeholder="我的作品" />
-          <button id="create-sandbox" disabled>创建草稿</button>
-          <label for="sandbox-id-input">作品 ID</label>
-          <input id="sandbox-id-input" type="text" placeholder="project-..." />
-          <select id="sandbox-status">
-            <option value="draft">草稿</option>
-            <option value="published">发布</option>
-          </select>
-          <button id="update-sandbox" disabled>更新作品状态</button>
-          <button id="load-library" disabled>查看班级作品库</button>
-          <pre id="library-info">未加载</pre>
-          <label for="comment-work-id">评论作品 ID</label>
-          <input id="comment-work-id" type="text" placeholder="work-..." />
-          <label for="comment-content">评论内容</label>
-          <input id="comment-content" type="text" placeholder="写下鼓励的话" />
-          <button id="submit-comment" disabled>发送评论</button>
-        </div>
-      </article>
+      </section>
     </section>
   </main>
-  <script type="module">
-    const statusBox = document.getElementById('status');
-    const currentUser = document.getElementById('current-user');
-    const logoutBtn = document.getElementById('logout');
-    const buttons = Array.from(document.querySelectorAll('button')).filter((btn) => btn.id && !['guest-login', 'class-login'].includes(btn.id));
 
+  <dialog id="settings-dialog">
+    <div class="dialog-header">
+      <h3>个人设置</h3>
+      <button type="button" data-action="close-settings" style="background:none;border:none;font-size:1.3rem;color:var(--muted);cursor:pointer;">×</button>
+    </div>
+    <form id="settings-form" style="display:grid;gap:14px;">
+      <label>昵称
+        <input name="nickname" required />
+      </label>
+      <label>偏好语言
+        <select name="language">
+          <option value="zh-CN">简体中文</option>
+          <option value="en-US">English</option>
+        </select>
+      </label>
+      <label>通知提醒
+        <select name="notifications">
+          <option value="all">全部通知</option>
+          <option value="important">仅重要</option>
+          <option value="none">关闭</option>
+        </select>
+      </label>
+      <div class="login-actions" style="justify-content:flex-end;">
+        <button type="button" data-action="close-settings" style="background:#e5e7eb;color:var(--text);">取消</button>
+        <button type="submit">保存设置</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
     const state = {
-      userId: localStorage.getItem('studentUserId') || '',
-      selectedLevel: '',
-      lastRun: null,
+      loggedIn: false,
+      activeTab: 'overview',
+      stages: [
+        { id: 'login', title: '登录账号', description: '输入账号与邀请码完成身份验证。', status: 'done' },
+        { id: 'map', title: '选择关卡', description: '在冒险地图中挑选挑战关卡。', status: 'pending' },
+        { id: 'challenge', title: '完成挑战', description: '阅读任务描述，提交代码或答案。', status: 'locked' },
+        { id: 'settle', title: '提交结算', description: '查看反馈，提交学习反思，完成闭环。', status: 'locked' },
+      ],
+      levels: [
+        { id: 'lvl-1', title: '第一章 · 基础指令', status: 'available', objectives: ['理解机器人行动指令', '完成迷宫路径规划'], reward: '200 EXP', description: '编写算法帮助机器人走出迷宫，并提交你的行动计划。' },
+        { id: 'lvl-2', title: '第二章 · 条件分支', status: 'locked', objectives: ['掌握 if/else 判断', '优化寻路策略'], reward: '350 EXP', description: '通过条件判断让机器人在不同地形中做出最优决策。' },
+        { id: 'lvl-3', title: '第三章 · 循环挑战', status: 'locked', objectives: ['使用循环提高效率', '记录行动日志'], reward: '500 EXP', description: '构建循环指令，帮助机器人反复执行任务直到目标达成。' }
+      ],
+      achievements: [
+        { id: 'achv-1', name: '极速入门', detail: '在 10 分钟内完成第一关挑战。', acquiredAt: '2024-03-18' },
+        { id: 'achv-2', name: '策略大师', detail: '提交 3 次优化后的路径规划方案。', acquiredAt: null },
+        { id: 'achv-3', name: '协作先锋', detail: '与同伴共同完成团队副本。', acquiredAt: null }
+      ],
+      todos: ['完成第一章练习题目', '复盘课堂笔记，记录 3 条改进点', '和队友约好协作时间'],
+      stats: [
+        { label: '当前等级', value: 'Lv.3 冒险家' },
+        { label: '累计经验', value: '2,430 EXP' },
+        { label: '已完成关卡', value: '5/12' },
+        { label: '连续学习', value: '7 天' }
+      ],
+      selectedLevel: null,
+      profile: {
+        nickname: '神秘探险家',
+        language: 'zh-CN',
+        notifications: 'all'
+      }
     };
 
-    function setStatus(message, type = 'info') {
-      statusBox.textContent = message;
-      statusBox.className = `status ${type}`;
+    const selectors = {
+      auth: document.querySelector('[data-screen="auth"]'),
+      dashboard: document.querySelector('[data-screen="dashboard"]'),
+      settingsTrigger: document.querySelector('[data-action="open-settings"]'),
+      stageList: document.getElementById('stage-list'),
+      levelsList: document.getElementById('levels-list'),
+      mapLevels: document.getElementById('map-levels'),
+      challengeContainer: document.getElementById('challenge-container'),
+      achievementOverview: document.getElementById('achievement-overview'),
+      achievementList: document.getElementById('achievement-list'),
+      todoList: document.getElementById('todo-list'),
+      statsRow: document.getElementById('stats-row'),
+      tabs: document.querySelectorAll('.tab'),
+      tabPanels: document.querySelectorAll('.tab-panel'),
+      settingsDialog: document.getElementById('settings-dialog'),
+      settingsForm: document.getElementById('settings-form'),
+    };
+
+    const stageStatusOrder = ['done', 'pending', 'locked'];
+
+    function renderStages() {
+      selectors.stageList.innerHTML = state.stages.map(stage => {
+        const active = stage.status === 'pending';
+        return `
+          <article class="stage-item" data-active="${active}">
+            <strong>${stage.title}</strong>
+            <span style="color:var(--muted);font-size:0.9rem;">${stage.description}</span>
+            <span class="chip" style="justify-self:start;">${stage.status === 'done' ? '已完成' : stage.status === 'pending' ? '进行中' : '待解锁'}</span>
+          </article>
+        `;
+      }).join('');
     }
 
-    function syncAuthState() {
-      const loggedIn = Boolean(state.userId);
-      currentUser.textContent = loggedIn ? state.userId : '未登录';
-      logoutBtn.disabled = !loggedIn;
-      for (const btn of buttons) {
-        btn.disabled = !loggedIn;
-      }
-      document.getElementById('load-prep').disabled = !state.selectedLevel || !loggedIn;
-      document.getElementById('run-program').disabled = !state.selectedLevel || !loggedIn;
-      document.getElementById('submit-result').disabled = !state.selectedLevel || !loggedIn;
-      document.getElementById('request-hint').disabled = !state.selectedLevel || !loggedIn;
+    function renderLevels(targetEl) {
+      targetEl.innerHTML = state.levels.map(level => {
+        return `
+          <article class="level-card" data-id="${level.id}" data-status="${level.status}">
+            <strong>${level.title}</strong>
+            <span class="status-pill">${level.status === 'completed' ? '已通关' : level.status === 'locked' ? '未解锁' : '可挑战'}</span>
+            <span style="color:var(--muted);font-size:0.9rem;">奖励：${level.reward}</span>
+            <ul style="margin:0;padding-left:18px;color:var(--muted);font-size:0.9rem;display:grid;gap:4px;">
+              ${level.objectives.map(o => `<li>${o}</li>`).join('')}
+            </ul>
+          </article>
+        `;
+      }).join('');
     }
 
-    syncAuthState();
-
-    function authHeaders() {
-      return state.userId ? { 'x-user-id': state.userId } : {};
+    function renderAchievements() {
+      const items = state.achievements.map(achv => `
+        <article class="achievement">
+          <strong>${achv.name}</strong>
+          <p style="margin:4px 0 0;color:var(--muted);">${achv.detail}</p>
+          <span class="chip" style="margin-top:8px;">${achv.acquiredAt ? `已解锁 · ${achv.acquiredAt}` : '待解锁'}</span>
+        </article>
+      `).join('');
+      selectors.achievementOverview.innerHTML = items;
+      selectors.achievementList.innerHTML = items;
     }
 
-    async function api(path, options = {}) {
-      const opts = { method: 'GET', ...options };
-      opts.headers = { 'Content-Type': 'application/json', ...authHeaders(), ...(options.headers || {}) };
-      if (options.body && typeof options.body !== 'string') {
-        opts.body = JSON.stringify(options.body);
-      }
-      const response = await fetch(path, opts);
-      const text = await response.text();
-      let data = null;
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch (error) {
-        data = text;
-      }
-      if (!response.ok) {
-        const message = data?.message || response.statusText;
-        throw new Error(message);
-      }
-      return data;
+    function renderTodos() {
+      selectors.todoList.innerHTML = state.todos.map(todo => `<li>${todo}</li>`).join('');
     }
 
-    function renderChapters(chapters) {
-      const container = document.getElementById('chapters');
-      container.innerHTML = '';
-      if (!chapters || chapters.length === 0) {
-        container.textContent = '暂无课程，请联系老师分配。';
+    function renderStats() {
+      selectors.statsRow.innerHTML = state.stats.map(stat => `<span class="chip">${stat.label}：${stat.value}</span>`).join('');
+    }
+
+    function renderChallenge() {
+      if (!state.selectedLevel) {
+        selectors.challengeContainer.innerHTML = `<div class="empty-state">请选择左侧或地图中的关卡查看任务详情。</div>`;
         return;
       }
-      chapters.forEach((chapter) => {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'stack';
-        const title = document.createElement('h3');
-        title.textContent = `${chapter.title}`;
-        wrapper.appendChild(title);
-        const grid = document.createElement('div');
-        grid.className = 'levels';
-        chapter.levels.forEach((level) => {
-          const card = document.createElement('button');
-          card.type = 'button';
-          card.className = 'level';
-          card.dataset.status = level.status;
-          card.disabled = level.status === 'locked';
-          card.innerHTML = `<div class="tag">${level.status === 'completed' ? '✅ 已完成' : level.status === 'available' ? '🎯 可挑战' : '🔒 未解锁'}</div>
-            <div><strong>${level.name}</strong></div>
-            <div>星级：${'⭐'.repeat(level.stars || 0)}${'☆'.repeat(3 - (level.stars || 0))}</div>`;
-          card.addEventListener('click', () => {
-            if (level.status === 'locked') return;
-            state.selectedLevel = level.id;
-            document.getElementById('selected-level').textContent = `${level.name} (${level.id})`;
-            syncAuthState();
-            setStatus(`已选择关卡 ${level.name}，请查看准备信息。`, 'info');
-          });
-          grid.appendChild(card);
-        });
-        wrapper.appendChild(grid);
-        container.appendChild(wrapper);
+      const level = state.levels.find(l => l.id === state.selectedLevel);
+      if (!level) return;
+      selectors.challengeContainer.innerHTML = `
+        <header>
+          <h3 style="margin:0 0 6px;">${level.title}</h3>
+          <p style="margin:0;color:var(--muted);">完成目标以获取 ${level.reward}</p>
+        </header>
+        <section>
+          <h4 style="margin:0 0 6px;">任务目标</h4>
+          <ul style="margin:0;padding-left:18px;color:var(--muted);display:grid;gap:4px;">
+            ${level.objectives.map(o => `<li>${o}</li>`).join('')}
+          </ul>
+        </section>
+        <section>
+          <h4 style="margin:0 0 6px;">任务说明</h4>
+          <p style="margin:0;color:var(--muted);line-height:1.6;">${level.description}</p>
+        </section>
+        <section>
+          <h4 style="margin:0 0 6px;">提交作品</h4>
+          <textarea placeholder="在这里粘贴你的代码或解题思路…"></textarea>
+          <div style="display:flex;justify-content:flex-end;gap:12px;flex-wrap:wrap;">
+            <button type="button" style="background:#e5e7eb;color:var(--text);">保存草稿</button>
+            <button type="button" data-action="submit-challenge">提交挑战</button>
+          </div>
+        </section>
+      `;
+    }
+
+    function updateStageProgress(nextStageId) {
+      const currentIndex = state.stages.findIndex(stage => stage.status === 'pending');
+      if (currentIndex !== -1) {
+        state.stages[currentIndex].status = 'done';
+        if (state.stages[currentIndex + 1]) {
+          state.stages[currentIndex + 1].status = 'pending';
+        }
+      }
+      if (nextStageId) {
+        const target = state.stages.find(stage => stage.id === nextStageId);
+        if (target && target.status === 'locked') {
+          target.status = 'pending';
+        }
+      }
+      renderStages();
+    }
+
+    function changeTab(tab) {
+      state.activeTab = tab;
+      selectors.tabs.forEach(button => {
+        const isActive = button.dataset.tab === tab;
+        button.dataset.active = String(isActive);
+        button.setAttribute('aria-selected', isActive);
+      });
+      selectors.tabPanels.forEach(panel => {
+        const isActive = panel.dataset.tab === tab;
+        panel.dataset.active = String(isActive);
       });
     }
 
-    document.getElementById('guest-login').addEventListener('click', async () => {
-      try {
-        setStatus('正在登录游客身份…', 'info');
-        const name = document.getElementById('guest-name').value || undefined;
-        const result = await api('/api/auth/guest', { method: 'POST', body: name ? { name } : {} });
-        state.userId = result.userId;
-        localStorage.setItem('studentUserId', state.userId);
-        setStatus(`欢迎 ${result.name}，已进入体验大厅。`, 'success');
-        syncAuthState();
-        await loadMap();
-      } catch (error) {
-        setStatus(error.message || '游客登录失败', 'error');
-      }
-    });
-
-    document.getElementById('class-login').addEventListener('click', async () => {
-      try {
-        setStatus('正在通过班级邀请码登录…', 'info');
-        const name = document.getElementById('class-name').value || undefined;
-        const inviteCode = document.getElementById('class-code').value.trim();
-        if (!inviteCode) {
-          setStatus('请输入班级邀请码。', 'error');
-          return;
-        }
-        const result = await api('/api/auth/class', { method: 'POST', body: { name, inviteCode } });
-        state.userId = result.userId;
-        localStorage.setItem('studentUserId', state.userId);
-        setStatus(`已加入班级，欢迎 ${result.name}！`, 'success');
-        syncAuthState();
-        await loadMap();
-      } catch (error) {
-        setStatus(error.message || '班级登录失败', 'error');
-      }
-    });
-
-    logoutBtn.addEventListener('click', () => {
-      state.userId = '';
-      state.selectedLevel = '';
-      state.lastRun = null;
-      localStorage.removeItem('studentUserId');
-      document.getElementById('chapters').innerHTML = '';
-      document.getElementById('prep-info').textContent = '请选择关卡后查看胜利条件与奖励。';
-      document.getElementById('run-result').textContent = '运行结果将在此处展示。';
-      document.getElementById('hint-info').textContent = '提示将在此处展示。';
-      document.getElementById('sandbox-info').textContent = '未加载';
-      document.getElementById('library-info').textContent = '未加载';
-      document.getElementById('avatar-info').textContent = '未加载';
-      document.getElementById('settings-info').textContent = '未加载';
-      document.getElementById('selected-level').textContent = '尚未选择';
-      setStatus('已退出登录。', 'info');
-      syncAuthState();
-    });
-
-    async function loadMap() {
-      try {
-        const data = await api('/api/student/map');
-        renderChapters(data.chapters);
-        setStatus('已更新冒险地图。', 'success');
-      } catch (error) {
-        setStatus(error.message || '无法加载冒险地图', 'error');
-      }
+    function handleLevelSelection(levelId) {
+      const level = state.levels.find(l => l.id === levelId);
+      if (!level || level.status === 'locked') return;
+      state.selectedLevel = levelId;
+      changeTab('challenge');
+      updateStageProgress('challenge');
+      renderChallenge();
     }
 
-    document.getElementById('load-map').addEventListener('click', loadMap);
+    document.getElementById('login-form').addEventListener('submit', event => {
+      event.preventDefault();
+      state.loggedIn = true;
+      state.stages[0].status = 'done';
+      state.stages[1].status = 'pending';
+      selectors.auth.hidden = true;
+      selectors.dashboard.hidden = false;
+      selectors.settingsTrigger.hidden = false;
+      renderStages();
+      renderLevels(selectors.levelsList);
+      renderLevels(selectors.mapLevels);
+      renderAchievements();
+      renderTodos();
+      renderStats();
+      renderChallenge();
+      changeTab(state.activeTab);
+    });
 
-    async function loadPrep() {
-      if (!state.selectedLevel) {
-        setStatus('请选择关卡。', 'error');
-        return;
+    document.addEventListener('click', event => {
+      const levelCard = event.target.closest('.level-card');
+      if (levelCard) {
+        handleLevelSelection(levelCard.dataset.id);
+        updateStageProgress('challenge');
       }
-      try {
-        const data = await api(`/api/student/levels/${state.selectedLevel}/prep`);
-        document.getElementById('prep-info').textContent = JSON.stringify(data, null, 2);
-        setStatus('已获取关卡准备信息。', 'success');
-      } catch (error) {
-        setStatus(error.message || '无法获取关卡详情', 'error');
+
+      if (event.target.matches('[data-action="open-settings"]')) {
+        selectors.settingsForm.nickname.value = state.profile.nickname;
+        selectors.settingsForm.language.value = state.profile.language;
+        selectors.settingsForm.notifications.value = state.profile.notifications;
+        selectors.settingsDialog.showModal();
       }
-    }
 
-    document.getElementById('load-prep').addEventListener('click', loadPrep);
-
-    async function requestHint() {
-      if (!state.selectedLevel) {
-        setStatus('请选择关卡。', 'error');
-        return;
+      if (event.target.matches('[data-action="close-settings"]')) {
+        selectors.settingsDialog.close();
       }
-      try {
-        const attempts = state.lastRun?.steps ?? 0;
-        const payload = { attempts };
-        const data = await api(`/api/student/hints/${state.selectedLevel}`, { method: 'POST', body: payload });
-        document.getElementById('hint-info').textContent = data.hint;
-        setStatus('提示已生成，注意合理使用提示次数。', 'success');
-      } catch (error) {
-        setStatus(error.message || '请求提示失败', 'error');
-      }
-    }
 
-    document.getElementById('request-hint').addEventListener('click', requestHint);
-
-    async function runProgram() {
-      if (!state.selectedLevel) {
-        setStatus('请选择关卡。', 'error');
-        return;
-      }
-      try {
-        const programText = document.getElementById('program-input').value.trim();
-        const program = programText ? JSON.parse(programText) : [];
-        const data = await api(`/api/student/levels/${state.selectedLevel}/run`, { method: 'POST', body: { program } });
-        state.lastRun = data;
-        document.getElementById('run-result').textContent = JSON.stringify(data, null, 2);
-        document.getElementById('result-steps').value = data.steps ?? 0;
-        document.getElementById('result-stars').value = data.stars ?? 0;
-        setStatus(data.success ? '模拟成功，请提交结算。' : '模拟未达成目标，请查看提示。', data.success ? 'success' : 'info');
-      } catch (error) {
-        setStatus(error.message || '运行模拟失败', 'error');
-      }
-    }
-
-    document.getElementById('run-program').addEventListener('click', runProgram);
-
-    async function submitResult() {
-      if (!state.selectedLevel) {
-        setStatus('请选择关卡。', 'error');
-        return;
-      }
-      try {
-        const payload = {
-          stars: Number(document.getElementById('result-stars').value || 0),
-          steps: Number(document.getElementById('result-steps').value || 0),
-          hints: Number(document.getElementById('result-hints').value || 0),
-          duration: Number(document.getElementById('result-duration').value || 0),
-          bestDifference: state.lastRun?.metadata?.bestSteps ? Math.max(0, Number(document.getElementById('result-steps').value) - state.lastRun.metadata.bestSteps) : undefined,
-          replayLog: state.lastRun?.log || [],
-        };
-        const data = await api(`/api/student/levels/${state.selectedLevel}/complete`, { method: 'POST', body: payload });
-        setStatus('结算数据已提交，冒险地图将自动更新。', 'success');
-        await loadMap();
-        return data;
-      } catch (error) {
-        setStatus(error.message || '提交结算失败', 'error');
-      }
-    }
-
-    document.getElementById('submit-result').addEventListener('click', submitResult);
-
-    document.getElementById('load-avatar').addEventListener('click', async () => {
-      try {
-        const data = await api('/api/student/avatar');
-        document.getElementById('avatar-info').textContent = JSON.stringify(data, null, 2);
-        document.getElementById('equip-input').value = data.equipped;
-        setStatus('已读取角色装扮。', 'success');
-      } catch (error) {
-        setStatus(error.message || '无法加载装扮', 'error');
+      if (event.target.matches('[data-action="submit-challenge"]')) {
+        updateStageProgress('settle');
+        alert('挑战已提交，指导老师会尽快反馈。');
       }
     });
 
-    document.getElementById('equip-submit').addEventListener('click', async () => {
-      try {
-        const equipped = document.getElementById('equip-input').value.trim();
-        if (!equipped) {
-          setStatus('请输入装扮 ID。', 'error');
-          return;
-        }
-        const data = await api('/api/student/avatar', { method: 'PUT', body: { equipped } });
-        document.getElementById('avatar-info').textContent = JSON.stringify(data, null, 2);
-        setStatus('装扮已更新。', 'success');
-      } catch (error) {
-        setStatus(error.message || '装扮更新失败', 'error');
-      }
+    selectors.tabs.forEach(button => {
+      button.addEventListener('click', () => {
+        changeTab(button.dataset.tab);
+      });
     });
 
-    document.getElementById('load-settings').addEventListener('click', async () => {
-      try {
-        const data = await api('/api/student/settings');
-        document.getElementById('settings-info').textContent = JSON.stringify(data, null, 2);
-        document.getElementById('volume-input').value = data.volume;
-        document.getElementById('language-input').value = data.language;
-        setStatus('已读取设置。', 'success');
-      } catch (error) {
-        setStatus(error.message || '无法获取设置', 'error');
-      }
+    selectors.settingsForm.addEventListener('submit', event => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      state.profile.nickname = formData.get('nickname');
+      state.profile.language = formData.get('language');
+      state.profile.notifications = formData.get('notifications');
+      selectors.settingsDialog.close();
+      alert('设置已保存');
     });
 
-    document.getElementById('save-settings').addEventListener('click', async () => {
-      try {
-        const volume = Number(document.getElementById('volume-input').value);
-        const language = document.getElementById('language-input').value || 'zh-CN';
-        const data = await api('/api/student/settings', { method: 'PUT', body: { volume, language } });
-        document.getElementById('settings-info').textContent = JSON.stringify(data, null, 2);
-        setStatus('设置已保存。', 'success');
-      } catch (error) {
-        setStatus(error.message || '保存设置失败', 'error');
-      }
-    });
-
-    document.getElementById('reset-progress').addEventListener('click', async () => {
-      if (!confirm('确认重置所有进度？该操作不可恢复。')) {
-        return;
-      }
-      try {
-        await api('/api/student/settings/reset-progress', { method: 'POST' });
-        setStatus('进度已重置，请重新挑战关卡。', 'success');
-        await loadMap();
-      } catch (error) {
-        setStatus(error.message || '重置失败', 'error');
-      }
-    });
-
-    document.getElementById('load-sandbox').addEventListener('click', async () => {
-      try {
-        const data = await api('/api/student/sandbox');
-        document.getElementById('sandbox-info').textContent = JSON.stringify(data, null, 2);
-        setStatus(data.sandboxUnlocked ? '沙盒已解锁，尽情创作！' : '尚未解锁沙盒，请继续通关章节。', 'info');
-      } catch (error) {
-        setStatus(error.message || '无法获取沙盒信息', 'error');
-      }
-    });
-
-    document.getElementById('create-sandbox').addEventListener('click', async () => {
-      try {
-        const title = document.getElementById('sandbox-title-input').value || '未命名作品';
-        const data = await api('/api/student/sandbox', { method: 'POST', body: { title, data: { createdVia: 'frontend-demo' } } });
-        document.getElementById('sandbox-info').textContent = JSON.stringify(data, null, 2);
-        document.getElementById('sandbox-id-input').value = data.id;
-        setStatus('已创建新的沙盒作品草稿。', 'success');
-      } catch (error) {
-        setStatus(error.message || '创建沙盒作品失败', 'error');
-      }
-    });
-
-    document.getElementById('update-sandbox').addEventListener('click', async () => {
-      try {
-        const id = document.getElementById('sandbox-id-input').value.trim();
-        if (!id) {
-          setStatus('请输入作品 ID。', 'error');
-          return;
-        }
-        const status = document.getElementById('sandbox-status').value;
-        const data = await api(`/api/student/sandbox/${id}`, { method: 'PATCH', body: { status } });
-        document.getElementById('sandbox-info').textContent = JSON.stringify(data, null, 2);
-        setStatus(status === 'published' ? '作品已发布，等待老师审核。' : '作品已保存为草稿。', 'success');
-      } catch (error) {
-        setStatus(error.message || '更新作品失败', 'error');
-      }
-    });
-
-    document.getElementById('load-library').addEventListener('click', async () => {
-      try {
-        const data = await api('/api/student/library');
-        document.getElementById('library-info').textContent = JSON.stringify(data, null, 2);
-        setStatus('已加载班级作品库。', 'success');
-      } catch (error) {
-        setStatus(error.message || '获取作品库失败', 'error');
-      }
-    });
-
-    document.getElementById('submit-comment').addEventListener('click', async () => {
-      try {
-        const workId = document.getElementById('comment-work-id').value.trim();
-        const content = document.getElementById('comment-content').value.trim();
-        if (!workId || !content) {
-          setStatus('请输入作品 ID 和评论内容。', 'error');
-          return;
-        }
-        const data = await api(`/api/student/library/${workId}/comment`, { method: 'POST', body: { content } });
-        setStatus('评论已提交。', 'success');
-        document.getElementById('library-info').textContent = `最新评论：\n${JSON.stringify(data, null, 2)}`;
-      } catch (error) {
-        setStatus(error.message || '评论失败', 'error');
-      }
-    });
-
-    if (state.userId) {
-      setStatus('检测到已登录身份，正在加载冒险地图…', 'info');
-      syncAuthState();
-      loadMap();
-    }
+    renderStages();
+    changeTab('overview');
   </script>
 </body>
 </html>
