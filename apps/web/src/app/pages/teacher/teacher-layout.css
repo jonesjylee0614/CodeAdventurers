@@ -1,0 +1,23 @@
+.teacher-layout {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.teacher-layout header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(236, 72, 153, 0.12);
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.teacher-layout header h2 {
+  margin: 0;
+}
+
+.teacher-layout header div {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
