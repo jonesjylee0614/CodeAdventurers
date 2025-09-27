@@ -1,0 +1,41 @@
+.ui-drawer {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: flex-end;
+  z-index: 999;
+}
+
+.ui-drawer__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.ui-drawer__panel {
+  position: relative;
+  height: 100%;
+  background: #f8fafc;
+  padding: 2rem;
+  box-shadow: -20px 0 40px rgba(15, 23, 42, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.ui-drawer__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ui-drawer__body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.ui-drawer__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}

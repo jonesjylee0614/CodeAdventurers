@@ -1,0 +1,58 @@
+.role-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 2rem;
+}
+
+.role-layout__sidebar {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+.role-layout__hero h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.role-layout__hero p {
+  margin: 0.5rem 0 0;
+  color: #475569;
+}
+
+.role-layout__sidebar nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.role-layout__sidebar a {
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 1rem;
+  background: rgba(79, 70, 229, 0.08);
+  color: #4338ca;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.role-layout__sidebar a.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+}
+
+.role-layout__content {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.role-layout__breadcrumbs {
+  font-size: 0.85rem;
+  color: #475569;
+}
