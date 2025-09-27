@@ -381,14 +381,13 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
     });
   });
 
-  app.get('/api/student/map', requireUser, requireRole('student'), async (req: RequestWithUser, res) => {
-    const student = req.user as StudentProfile;
+  async function resolveStudentLevelStatuses(student: StudentProfile) {
     const classInfo = await context.classes.get(student.classId);
     if (!classInfo) {
-      res.status(404).json({ message: '未找到班级' });
-      return;
+      return { chapters: [], statusMap: new Map<string, 'locked' | 'unlocked' | 'completed'>() };
     }
-    const chapters: Array<{ id: string; title: string; levels: Array<{ id: string; name: string; status: string; stars: number; bestDifference: number | null }> }> = [];
+
+    const chapters: Array<{ id: string; title: string; order: number; levelIds: string[] }> = [];
     for (const courseId of classInfo.assignedCourseIds) {
       const course = await context.courses.get(courseId);
       if (!course) {
@@ -399,27 +398,106 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
         if (!chapter) {
           continue;
         }
-        const levels = [] as Array<{ id: string; name: string; status: string; stars: number; bestDifference: number | null }>;
-        for (const levelId of chapter.levelIds) {
-          const level = await context.levels.get(levelId);
-          if (!level) {
-            continue;
-          }
-          const progress = student.progress[levelId];
-          const status = progress ? 'completed' : 'locked';
-          levels.push({
-            id: levelId,
-            name: level.name,
-            status,
-            stars: progress?.stars ?? 0,
-            bestDifference: progress?.bestDifference ?? null
-          });
-        }
-        chapters.push({ id: chapter.id, title: chapter.title, levels });
+        chapters.push({ id: chapter.id, title: chapter.title, order: chapter.order ?? 0, levelIds: chapter.levelIds });
       }
     }
-    chapters.sort((a, b) => a.id.localeCompare(b.id));
-    res.json({ chapters });
+
+    chapters.sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+
+    const statusMap = new Map<string, 'locked' | 'unlocked' | 'completed'>();
+    let previousChaptersCompleted = true;
+
+    for (const chapter of chapters) {
+      const isChapterUnlocked = previousChaptersCompleted;
+      let previousLevelsCompleted = true;
+      const levelProgress = chapter.levelIds.map((levelId) => student.progress[levelId]);
+      const chapterCompleted = levelProgress.every((record) => Boolean(record));
+
+      for (const levelId of chapter.levelIds) {
+        const levelRecord = student.progress[levelId];
+        let status: 'locked' | 'unlocked' | 'completed';
+        if (levelRecord) {
+          status = 'completed';
+        } else if (isChapterUnlocked && previousLevelsCompleted) {
+          status = 'unlocked';
+        } else {
+          status = 'locked';
+        }
+        statusMap.set(levelId, status);
+        if (!levelRecord) {
+          previousLevelsCompleted = false;
+        }
+      }
+
+      previousChaptersCompleted = previousChaptersCompleted && chapterCompleted;
+    }
+
+    return { chapters, statusMap };
+  }
+
+  app.get('/api/student/map', requireUser, requireRole('student'), async (req: RequestWithUser, res) => {
+    const student = req.user as StudentProfile;
+    const { chapters, statusMap } = await resolveStudentLevelStatuses(student);
+
+    const chapterSummaries: Array<{ id: string; title: string; levels: Array<{ id: string; name: string; status: 'locked' | 'unlocked' | 'completed'; stars: number; bestDifference: number | null }> }> = [];
+
+    for (const chapter of chapters) {
+      const levelSummaries: Array<{ id: string; name: string; status: 'locked' | 'unlocked' | 'completed'; stars: number; bestDifference: number | null }> = [];
+
+      for (const levelId of chapter.levelIds) {
+        const level = await context.levels.get(levelId);
+        if (!level) {
+          continue;
+        }
+        const progress = student.progress[levelId];
+        levelSummaries.push({
+          id: levelId,
+          name: level.name,
+          status: statusMap.get(levelId) ?? 'locked',
+          stars: progress?.stars ?? 0,
+          bestDifference: progress?.bestDifference ?? null,
+        });
+      }
+
+      chapterSummaries.push({ id: chapter.id, title: chapter.title, levels: levelSummaries });
+    }
+
+    res.json({ chapters: chapterSummaries });
+  });
+
+  app.get('/api/student/levels/:levelId', requireUser, requireRole('student'), async (req: RequestWithUser, res) => {
+    const student = req.user as StudentProfile;
+    const level = await context.levels.get(req.params.levelId);
+    if (!level) {
+      res.status(404).json({ message: '关卡不存在' });
+      return;
+    }
+
+    const { statusMap } = await resolveStudentLevelStatuses(student);
+    const status = statusMap.get(level.id) ?? 'locked';
+
+    if (status === 'locked') {
+      res.status(403).json({ message: '关卡尚未解锁' });
+      return;
+    }
+
+    res.json({
+      id: level.id,
+      name: level.name,
+      width: level.width,
+      height: level.height,
+      tiles: level.tiles,
+      start: level.start,
+      goal: level.goal,
+      bestSteps: level.bestSteps,
+      hints: level.hints,
+      allowedBlocks: level.allowedBlocks,
+      comic: level.comic,
+      rewards: level.rewards,
+      chapterId: level.chapterId,
+      status,
+      progress: student.progress[level.id] ?? null,
+    });
   });
 
   app.get('/api/student/levels/:levelId/prep', requireUser, requireRole('student'), async (req: RequestWithUser, res) => {

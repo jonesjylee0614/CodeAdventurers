@@ -34,6 +34,15 @@ export interface StudentProfile extends User {
   progress: Record<string, any>;
 }
 
+export interface StudentLevelProgress {
+  levelId: string;
+  stars: number;
+  steps: number;
+  hints: number;
+  duration: number;
+  bestDifference: number;
+}
+
 export interface Level {
   id: string;
   name: string;
@@ -52,6 +61,9 @@ export interface Level {
   allowedBlocks?: string[];
   comic?: string;
   rewards?: { outfit?: string };
+  chapterId?: string;
+  status?: 'locked' | 'unlocked' | 'completed';
+  progress?: StudentLevelProgress | null;
 }
 
 export interface Chapter {
@@ -190,6 +202,10 @@ class ApiClient {
     return this.get(`/student/levels/${levelId}/prep`);
   }
 
+  async getStudentLevel(levelId: string): Promise<ApiResponse<Level>> {
+    return this.get(`/student/levels/${levelId}`);
+  }
+
   async runLevel(levelId: string, program: any[]): Promise<ApiResponse<any>> {
     return this.post(`/student/levels/${levelId}/run`, { program });
   }
@@ -209,8 +225,24 @@ class ApiClient {
     return this.post(`/student/hints/${levelId}`, payload);
   }
 
+  async getStudentSettings(): Promise<ApiResponse<any>> {
+    return this.get('/student/settings');
+  }
+
   async updateStudentSettings(settings: any): Promise<ApiResponse<any>> {
     return this.put('/student/settings', settings);
+  }
+
+  async resetStudentProgress(): Promise<ApiResponse<void>> {
+    return this.post('/student/settings/reset-progress');
+  }
+
+  async getStudentAvatar(): Promise<ApiResponse<{ equipped: string; unlocked: string[] }>> {
+    return this.get('/student/avatar');
+  }
+
+  async updateStudentAvatar(equipped: string): Promise<ApiResponse<{ equipped: string; unlocked: string[] }>> {
+    return this.put('/student/avatar', { equipped });
   }
 
   // 教师端API (基础结构)
