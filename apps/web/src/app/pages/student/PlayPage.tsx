@@ -12,21 +12,34 @@ import { GameCanvas } from '../../../../student/src/GameCanvas';
 import { Level } from '../../../services/api/client';
 import { apiClient } from '../../../services/api/client';
 
+const BLOCK_LABELS: Record<string, string> = {
+  MOVE: '前进',
+  TURN_LEFT: '向左转',
+  TURN_RIGHT: '向右转',
+  COLLECT: '收集',
+  REPEAT: '循环',
+  CONDITIONAL: '条件判断'
+};
+
 const PlayPage = () => {
   const { levelId } = useParams<{ levelId: string }>();
   const navigate = useNavigate();
-  
+
   const [level, setLevel] = useState<Level | null>(null);
+  const [levelStatus, setLevelStatus] = useState<'locked' | 'unlocked' | 'completed'>('locked');
+  const [levelProgress, setLevelProgress] = useState<Level['progress'] | null>(null);
   const [showHint, setShowHint] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [levelPrep, setLevelPrep] = useState<any>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [isPlaying, setIsPlaying] = useState(false);
-  
-  const { 
-    game, 
-    loading, 
-    error, 
+  const [isFetching, setIsFetching] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const {
+    game,
+    loading,
+    error,
     isLoggedIn,
     runProgram,
     completeLevel,
@@ -54,27 +67,41 @@ const PlayPage = () => {
   const loadLevelData = async () => {
     if (!levelId) return;
 
+    setIsFetching(true);
+    setFetchError(null);
+
     try {
-      // 获取关卡准备数据
-      const prepResponse = await apiClient.getLevelPrep(levelId);
-      if (prepResponse.error) {
-        console.error('获取关卡准备数据失败:', prepResponse.error);
-        return;
+      const [detailResponse, prepResponse] = await Promise.all([
+        apiClient.getStudentLevel(levelId),
+        apiClient.getLevelPrep(levelId)
+      ]);
+
+      if (detailResponse.error) {
+        if (detailResponse.error.includes('未解锁')) {
+          setLevel(null);
+          setLevelStatus('locked');
+        } else {
+          setFetchError(detailResponse.error);
+        }
+      } else if (detailResponse.data) {
+        const levelData = detailResponse.data;
+        setLevel(levelData);
+        setLevelStatus(levelData.status ?? 'locked');
+        setLevelProgress(levelData.progress ?? null);
+        setCurrentLevel(levelData);
+        resetGame();
+        setStartTime(Date.now());
       }
-      
-      setLevelPrep(prepResponse.data);
-      
-      // 加载示例关卡数据（实际应该从API获取）
-      const response = await fetch('/levels/sample-1.json');
-      const levelData: Level = await response.json();
-      
-      setLevel(levelData);
-      setCurrentLevel(levelData);
-      resetGame();
-      setStartTime(Date.now());
-      
+
+      if (prepResponse.error) {
+        setFetchError(prepResponse.error);
+      } else {
+        setLevelPrep(prepResponse.data);
+      }
     } catch (error) {
-      console.error('加载关卡数据失败:', error);
+      setFetchError(error instanceof Error ? error.message : '加载关卡数据失败');
+    } finally {
+      setIsFetching(false);
     }
   };
 
@@ -99,16 +126,18 @@ const PlayPage = () => {
 
   const handleComplete = async () => {
     if (!game.simulationResult?.success) return;
-    
+
     const duration = Math.round((Date.now() - startTime) / 1000);
-    
+    const bestDifference = Math.max(0, (game.simulationResult.steps ?? 0) - (level?.bestSteps ?? 0));
+
     await completeLevel({
       stars: game.simulationResult.stars,
       steps: game.simulationResult.steps,
       hints: game.hints.length,
-      duration
+      duration,
+      bestDifference
     });
-    
+
     setShowResult(true);
   };
 
@@ -116,7 +145,16 @@ const PlayPage = () => {
     navigate('/student/levels');
   };
 
-  if (loading || !level) {
+  if (fetchError) {
+    return (
+      <Card title="加载失败">
+        <p style={{ color: '#ef4444', marginBottom: '16px' }}>{fetchError}</p>
+        <Button onClick={loadLevelData}>重新加载</Button>
+      </Card>
+    );
+  }
+
+  if (loading || isFetching) {
     return (
       <div style={{ display: 'grid', gap: '1.5rem' }}>
         <Skeleton height={400} />
@@ -137,11 +175,25 @@ const PlayPage = () => {
     );
   }
 
+  if (levelStatus === 'locked' || !level) {
+    return (
+      <Card title="关卡未解锁" subtitle="请先完成前置关卡">
+        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
+          你还没有解锁此挑战。返回冒险地图完成前置关卡即可开启。
+        </p>
+        <Button onClick={() => navigate('/student/levels')}>返回章节地图</Button>
+      </Card>
+    );
+  }
+
+  const allowedBlocks = levelPrep?.allowedBlocks ?? level.allowedBlocks;
+  const victoryCondition = levelPrep?.victoryCondition ?? level.goal;
+
   return (
     <div style={{ display: 'grid', gap: '1.5rem' }}>
       {/* 关卡头部信息 */}
-      <Card 
-        title={`🎯 ${level.name}`} 
+      <Card
+        title={`🎯 ${level.name}`}
         subtitle="编程挑战区 - 使用积木编程完成任务"
         style={{ 
           background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
@@ -162,8 +214,14 @@ const PlayPage = () => {
               <div style={{ fontSize: '14px', opacity: 0.9 }}>提示次数</div>
               <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{game.hints.length}</div>
             </div>
+            {levelProgress && (
+              <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px 12px', borderRadius: '8px' }}>
+                <div style={{ fontSize: '14px', opacity: 0.9 }}>历史最佳</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{levelProgress.steps} 步</div>
+              </div>
+            )}
           </div>
-          
+
           <div style={{ display: 'flex', gap: '8px' }}>
             <Button
               variant="secondary"
@@ -193,26 +251,42 @@ const PlayPage = () => {
           {/* 目标说明 */}
           <Card title="🎯 任务目标" size="sm">
             <div style={{ fontSize: '14px', color: '#374151' }}>
-              {level.goal.reach && (
+              {victoryCondition?.reach && (
                 <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>🏁</span>
-                  <span>到达位置 ({level.goal.reach.x}, {level.goal.reach.y})</span>
+                  <span>到达位置 ({victoryCondition.reach.x}, {victoryCondition.reach.y})</span>
                 </div>
               )}
-              {level.goal.collectibles !== undefined && (
+              {victoryCondition?.collectibles !== undefined && (
                 <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>⭐</span>
                   <span>收集所有宝石</span>
                 </div>
               )}
-              {level.goal.stepLimit && (
+              {victoryCondition?.stepLimit && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span>⚡</span>
-                  <span>在 {level.goal.stepLimit} 步内完成</span>
+                  <span>在 {victoryCondition.stepLimit} 步内完成</span>
                 </div>
               )}
             </div>
           </Card>
+
+          {allowedBlocks && allowedBlocks.length > 0 && (
+            <Card title="🧰 可用积木" size="sm">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {allowedBlocks.map((block: string) => (
+                  <Badge key={block} tone="info">{BLOCK_LABELS[block] ?? block}</Badge>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {level.comic && (
+            <Card title="📖 教学漫画" size="sm" style={{ background: '#f5f3ff' }}>
+              <p style={{ margin: 0, color: '#4c1d95', lineHeight: 1.6 }}>{level.comic}</p>
+            </Card>
+          )}
 
           {/* 操作按钮 */}
           <Card title="🎮 游戏控制" size="sm">
@@ -317,9 +391,13 @@ const PlayPage = () => {
       <Card title="🧩 积木编程区" subtitle="拖拽积木组建你的解决方案">
         <BlockEditor
           level={level}
-          onRun={async (program) => {
+          allowedBlocks={allowedBlocks}
+          onProgramChange={(program: any[]) => {
             setProgram(program);
-            const result = await runProgram();
+          }}
+          onRun={async (program: any[]) => {
+            setProgram(program);
+            const result = await runProgram(program);
             return result || { success: false, steps: 0, stars: 0, log: [] };
           }}
           onReset={handleReset}
@@ -392,6 +470,11 @@ const PlayPage = () => {
             <div style={{ fontSize: '14px', color: '#6b7280' }}>
               用时 {game.simulationResult.steps} 步，获得了 {game.simulationResult.stars} 星评价
             </div>
+            {level.rewards?.outfit && (
+              <div style={{ marginTop: '12px', fontSize: '14px', color: '#7c3aed' }}>
+                解锁新装扮：{level.rewards.outfit}
+              </div>
+            )}
           </div>
         )}
       </Modal>

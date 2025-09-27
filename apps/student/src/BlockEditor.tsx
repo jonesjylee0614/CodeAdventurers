@@ -26,6 +26,11 @@ const BLOCK_TYPES: BlockType[] = [
 ];
 
 // 程序块实例
+interface BlockConfig {
+  repeatTimes?: number;
+  conditionType?: Engine.Condition['type'];
+}
+
 interface ProgramBlock {
   id: string;
   blockType: BlockType;
@@ -33,20 +38,49 @@ interface ProgramBlock {
   x: number;
   y: number;
   children?: ProgramBlock[];
+  config: BlockConfig;
 }
 
 interface BlockEditorProps {
   level: LevelDefinition;
   onRun: (program: Instruction[]) => Promise<SimulationResult>;
   onReset: () => void;
+  allowedBlocks?: string[];
+  onProgramChange?: (program: Instruction[]) => void;
 }
 
-export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset }: BlockEditorProps) => {
+const BLOCK_CODE_BY_ID: Record<string, string> = {
+  move: 'MOVE',
+  'turn-left': 'TURN_LEFT',
+  'turn-right': 'TURN_RIGHT',
+  collect: 'COLLECT',
+  repeat: 'REPEAT',
+  if: 'CONDITIONAL'
+};
+
+export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset, allowedBlocks, onProgramChange }: BlockEditorProps) => {
   const [programBlocks, setProgramBlocks] = React.useState<ProgramBlock[]>([]);
   const [draggedBlock, setDraggedBlock] = React.useState<BlockType | null>(null);
   const [isRunning, setIsRunning] = React.useState(false);
   const [result, setResult] = React.useState<SimulationResult | null>(null);
+  const [selectedBlockId, setSelectedBlockId] = React.useState<string | null>(null);
   const programAreaRef = React.useRef<HTMLDivElement>(null);
+
+  const availableBlockTypes = React.useMemo(() => {
+    if (!allowedBlocks || allowedBlocks.length === 0) {
+      return BLOCK_TYPES;
+    }
+    const allowedSet = new Set(allowedBlocks);
+    return BLOCK_TYPES.filter((block) => {
+      const code = BLOCK_CODE_BY_ID[block.id] ?? block.id.toUpperCase();
+      return allowedSet.has(code);
+    });
+  }, [allowedBlocks]);
+
+  const getBlocksByCategory = React.useCallback(
+    (category: BlockType['category']) => availableBlockTypes.filter((block) => block.category === category),
+    [availableBlockTypes]
+  );
 
   // 从积木块生成指令程序
   const blocksToProgram = React.useCallback((blocks: ProgramBlock[]): Instruction[] => {
@@ -62,15 +96,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
         case 'collect':
           return { type: 'collect' };
         case 'repeat':
-          return { 
-            type: 'repeat', 
-            times: 3, // 默认重复3次，可以设置为可编辑
+          return {
+            type: 'repeat',
+            times: block.config.repeatTimes ?? 2,
             body: block.children ? blocksToProgram(block.children) : []
           };
         case 'conditional':
           return {
             type: 'conditional',
-            condition: { type: 'tile-ahead-walkable' }, // 默认条件
+            condition: { type: block.config.conditionType ?? 'tile-ahead-walkable' },
             truthy: block.children ? blocksToProgram(block.children) : [],
             falsy: []
           };
@@ -94,17 +128,27 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    const defaultConfig: BlockConfig = {};
+    if (draggedBlock.id === 'repeat') {
+      defaultConfig.repeatTimes = 2;
+    }
+    if (draggedBlock.id === 'if') {
+      defaultConfig.conditionType = 'tile-ahead-walkable';
+    }
+
     const newBlock: ProgramBlock = {
       id: Date.now().toString(),
       blockType: draggedBlock,
       instruction: { type: draggedBlock.type } as Instruction,
       x,
       y,
-      children: draggedBlock.category === 'control' ? [] : undefined
+      children: draggedBlock.category === 'control' ? [] : undefined,
+      config: defaultConfig
     };
 
     setProgramBlocks((prev: ProgramBlock[]) => [...prev, newBlock]);
     setDraggedBlock(null);
+    setSelectedBlockId(newBlock.id);
   }, [draggedBlock]);
 
   // 运行程序
@@ -125,13 +169,41 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
   const handleReset = () => {
     setProgramBlocks([]);
     setResult(null);
+    setSelectedBlockId(null);
     onReset();
   };
 
   // 删除积木
   const removeBlock = (blockId: string) => {
     setProgramBlocks((prev: ProgramBlock[]) => prev.filter((block: ProgramBlock) => block.id !== blockId));
+    if (selectedBlockId === blockId) {
+      setSelectedBlockId(null);
+    }
   };
+
+  const updateBlockConfig = (blockId: string, config: Partial<BlockConfig>) => {
+    setProgramBlocks((prev) =>
+      prev.map((block) =>
+        block.id === blockId
+          ? {
+              ...block,
+              config: {
+                ...block.config,
+                ...config
+              }
+            }
+          : block
+      )
+    );
+  };
+
+  const selectedBlock = React.useMemo(() => programBlocks.find((block) => block.id === selectedBlockId) ?? null, [programBlocks, selectedBlockId]);
+
+  React.useEffect(() => {
+    if (onProgramChange) {
+      onProgramChange(blocksToProgram(programBlocks));
+    }
+  }, [programBlocks, onProgramChange, blocksToProgram]);
 
   return (
     <div className="block-editor">
@@ -211,6 +283,13 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
           display: flex;
           align-items: center;
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          border: 2px solid transparent;
+          transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .program-block.selected {
+          border-color: #fde68a;
+          transform: scale(1.03);
         }
 
         .program-block .delete-btn {
@@ -231,6 +310,36 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
           display: flex;
           flex-direction: column;
           gap: 12px;
+        }
+
+        .inspector {
+          background: #eef2ff;
+          border-radius: 6px;
+          padding: 12px;
+          display: grid;
+          gap: 12px;
+        }
+
+        .inspector h4 {
+          margin: 0;
+          color: #4338ca;
+          font-size: 14px;
+        }
+
+        .inspector label {
+          font-size: 13px;
+          color: #1f2937;
+          display: grid;
+          gap: 4px;
+        }
+
+        .inspector input,
+        .inspector select {
+          padding: 6px 8px;
+          border-radius: 4px;
+          border: 1px solid #c7d2fe;
+          font-size: 13px;
+          background: white;
         }
 
         .goal-section {
@@ -312,7 +421,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
       <div className="block-palette">
         <div className="block-category">
           <h4>🎯 动作积木</h4>
-          {BLOCK_TYPES.filter(b => b.category === 'action').map(blockType => (
+          {getBlocksByCategory('action').map(blockType => (
             <div
               key={blockType.id}
               className="palette-block"
@@ -328,7 +437,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
 
         <div className="block-category">
           <h4>🔄 控制积木</h4>
-          {BLOCK_TYPES.filter(b => b.category === 'control').map(blockType => (
+          {getBlocksByCategory('control').map(blockType => (
             <div
               key={blockType.id}
               className="palette-block"
@@ -344,7 +453,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
 
         <div className="block-category">
           <h4>❓ 条件积木</h4>
-          {BLOCK_TYPES.filter(b => b.category === 'condition').map(blockType => (
+          {getBlocksByCategory('condition').map(blockType => (
             <div
               key={blockType.id}
               className="palette-block"
@@ -365,6 +474,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
         className={`program-area ${draggedBlock ? 'drag-over' : ''}`}
         onDragOver={(e: React.DragEvent) => e.preventDefault()}
         onDrop={(e: React.DragEvent) => handleDrop(e)}
+        onClick={() => setSelectedBlockId(null)}
       >
         {programBlocks.length === 0 ? (
           <div className="empty-program">
@@ -374,11 +484,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
           programBlocks.map((block: ProgramBlock) => (
             <div
               key={block.id}
-              className="program-block"
+              className={`program-block ${selectedBlockId === block.id ? 'selected' : ''}`}
               style={{
                 backgroundColor: block.blockType.color,
                 left: block.x,
                 top: block.y
+              }}
+              onClick={(event) => {
+                event.stopPropagation();
+                setSelectedBlockId(block.id);
               }}
             >
               <span className="block-icon">{block.blockType.icon}</span>
@@ -401,6 +515,50 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset 
           <h4>🎯 目标</h4>
           <p>{level.name}</p>
           <p>最佳步数: {level.bestSteps}</p>
+        </div>
+
+        <div className="inspector">
+          <h4>🛠️ 积木设置</h4>
+          {selectedBlock ? (
+            <>
+              <div style={{ fontSize: '13px', color: '#6b7280' }}>
+                当前选择：{selectedBlock.blockType.label}
+              </div>
+              {selectedBlock.blockType.id === 'repeat' && (
+                <label>
+                  重复次数
+                  <input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={selectedBlock.config.repeatTimes ?? 2}
+                    onChange={(event) => updateBlockConfig(selectedBlock.id, { repeatTimes: Number(event.target.value) })}
+                  />
+                </label>
+              )}
+              {selectedBlock.blockType.id === 'if' && (
+                <label>
+                  判断条件
+                  <select
+                    value={selectedBlock.config.conditionType ?? 'tile-ahead-walkable'}
+                    onChange={(event) => updateBlockConfig(selectedBlock.id, { conditionType: event.target.value as Engine.Condition['type'] })}
+                  >
+                    <option value="tile-ahead-walkable">前方可通行</option>
+                    <option value="collectibles-remaining">关卡仍有宝石</option>
+                  </select>
+                </label>
+              )}
+              {(selectedBlock.blockType.id !== 'repeat' && selectedBlock.blockType.id !== 'if') && (
+                <div style={{ fontSize: '13px', color: '#9ca3af' }}>
+                  此积木无需额外设置。
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ fontSize: '13px', color: '#94a3b8' }}>
+              选择程序区中的积木以调整参数。
+            </div>
+          )}
         </div>
 
         <div className="controls">

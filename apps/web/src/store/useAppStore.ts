@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { apiClient, StudentProfile, User, Level, Chapter, ApiResponse } from '../services/api/client';
+import { apiClient, StudentProfile, User, Level, Chapter } from '../services/api/client';
 
 export interface GameState {
   currentLevel?: Level;
@@ -45,12 +45,13 @@ export interface AppState {
   // 游戏动作
   setCurrentLevel: (level: Level) => void;
   setProgram: (program: any[]) => void;
-  runProgram: () => Promise<void>;
+  runProgram: (programOverride?: any[]) => Promise<any | undefined>;
   completeLevel: (data: {
     stars: number;
     steps: number;
     hints?: number;
     duration?: number;
+    bestDifference?: number;
   }) => Promise<void>;
   getHint: () => Promise<void>;
   resetGame: () => void;
@@ -223,55 +224,59 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      runProgram: async () => {
+      runProgram: async (programOverride) => {
         const { game } = get();
         if (!game.currentLevel) return;
 
-        set({ 
-          game: { 
-            ...game, 
-            isRunning: true 
-          } 
+        set({
+          game: {
+            ...game,
+            isRunning: true
+          }
         });
 
         try {
+          const program = Array.isArray(programOverride) ? programOverride : game.currentProgram;
           const response = await apiClient.runLevel(
-            game.currentLevel.id, 
-            game.currentProgram
+            game.currentLevel.id,
+            program
           );
-          
+
           if (response.error) {
-            set({ 
+            set({
               error: response.error,
-              game: { 
-                ...game, 
+              game: {
+                ...game,
                 isRunning: false,
                 attempts: game.attempts + 1,
                 lastError: response.error
-              } 
+              }
             });
-            return;
+            return undefined;
           }
-          
+
           if (response.data) {
-            set({ 
-              game: { 
-                ...game, 
+            set({
+              game: {
+                ...game,
+                currentProgram: program,
                 simulationResult: response.data,
                 isRunning: false,
                 attempts: game.attempts + 1,
                 lastError: response.data.success ? undefined : response.data.errorCode
-              } 
+              }
             });
+            return response.data;
           }
         } catch (error) {
-          set({ 
+          set({
             error: '运行程序失败',
-            game: { 
-              ...game, 
-              isRunning: false 
-            } 
+            game: {
+              ...game,
+              isRunning: false
+            }
           });
+          return undefined;
         }
       },
 
@@ -289,7 +294,7 @@ export const useAppStore = create<AppState>()(
             set({ error: response.error });
             return;
           }
-          
+
           // 重新加载章节数据以更新进度
           get().loadChapters();
         } catch (error) {
