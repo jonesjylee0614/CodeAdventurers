@@ -48,6 +48,8 @@ func main() {
 	}
 	defer loggr.Sync()
 
+	ctx = logger.WithContext(ctx, loggr)
+
 	tel, err := telemetry.Setup(ctx, "api-go", cfg.Telemetry.OTLPEndpoint)
 	if err != nil {
 		loggr.Warn("failed to initialize OpenTelemetry", zapError(err))
@@ -77,12 +79,12 @@ func main() {
 	teacherSvc := teacherService.New()
 	healthSvc := healthService.New(db, redisClient)
 
-	authH := auth.New(authSvc, validate)
-	studentH := student.New(studentSvc, jobDispatcher, validate)
-	teacherH := teacher.New(teacherSvc)
-	healthH := health.New(healthSvc)
+	authH := auth.New(authSvc, validate, loggr.Named("auth-handler"))
+	studentH := student.New(studentSvc, jobDispatcher, validate, loggr.Named("student-handler"))
+	teacherH := teacher.New(teacherSvc, loggr.Named("teacher-handler"))
+	healthH := health.New(healthSvc, loggr.Named("health-handler"))
 	wsMgr := ws.NewManager()
-	wsH := wsHandler.New(wsMgr)
+	wsH := wsHandler.New(wsMgr, loggr.Named("ws-handler"))
 
 	rateLimiter := rate.New(cfg.RateLimit.PerMinute)
 
@@ -98,12 +100,17 @@ func main() {
 
 	srv := server.New(cfg.Addr(), engine)
 
+	loggr.Info("api server starting", zap.String("addr", cfg.Addr()), zap.String("env", cfg.Env))
+
 	if err := srv.Start(ctx); err != nil {
 		if err == context.Canceled {
+			loggr.Info("server shutdown requested", zap.String("reason", "context canceled"))
 			return
 		}
 		loggr.Fatal("server terminated", zapError(err))
 	}
+
+	loggr.Info("api server stopped cleanly")
 }
 
 func zapError(err error) zap.Field {
