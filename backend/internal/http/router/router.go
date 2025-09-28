@@ -65,7 +65,6 @@ func registerRoutes(engine *gin.Engine, deps Dependencies) {
 			student.POST("/levels/:id/run", deps.Student.Run)
 			student.POST("/levels/:id/complete", deps.Student.Complete)
 			student.POST("/levels/:id/sandbox", deps.Student.Sandbox)
-			student.GET("/run/stream", func(c *gin.Context) { c.Status(http.StatusNotFound) })
 		}
 
 		teacher := api.Group("/teacher")
