@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"log"
 	"os/signal"
 	"syscall"
@@ -39,6 +41,14 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	if path, err := config.LoadDotEnv(); err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			log.Printf("failed to load .env file: %v", err)
+		}
+	} else {
+		log.Printf("loaded environment variables from %s", path)
+	}
 
 	cfg := config.Load()
 
