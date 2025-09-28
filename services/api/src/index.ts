@@ -12,6 +12,7 @@ type HintPayload = Engine.HintPayload;
 import * as TelemetryModule from './telemetry.ts';
 import * as SeedModule from './seed.ts';
 const TelemetryBuffer = TelemetryModule.TelemetryBuffer;
+type TelemetryBufferInstance = InstanceType<typeof TelemetryModule.TelemetryBuffer>;
 const ensureSandboxUnlock = SeedModule.ensureSandboxUnlock;
 const seedData = SeedModule.seedData;
 import * as StoreModule from './store.ts';
@@ -30,6 +31,15 @@ type UserProfile = StoreModule.UserProfile;
 type WeeklyReport = StoreModule.WeeklyReport;
 type WorkSubmission = StoreModule.WorkSubmission;
 const createDataContext = StoreModule.createDataContext;
+
+const unlockAllLevelsForTesting =
+  process.env.UNLOCK_ALL_LEVELS === 'true' || process.env.NODE_ENV !== 'production';
+
+const ROLE_PASSWORDS: Partial<Record<Role, string>> = {
+  teacher: process.env.DEMO_TEACHER_PASSWORD ?? 'teach123',
+  parent: process.env.DEMO_PARENT_PASSWORD ?? 'parent123',
+  admin: process.env.DEMO_ADMIN_PASSWORD ?? 'admin123'
+};
 
 interface RequestWithUser extends Request {
   user?: UserProfile;
@@ -56,13 +66,13 @@ function requireRole<T extends Role>(role: T) {
 export interface ServerOptions {
   context?: DataContext;
   mode?: 'memory' | 'mysql';
-  telemetry?: TelemetryBuffer;
+  telemetry?: TelemetryBufferInstance;
 }
 
 export interface ServerInstance {
   app: express.Express;
   context: DataContext;
-  telemetry: TelemetryBuffer;
+  telemetry: TelemetryBufferInstance;
 }
 
 export async function createServer(options: ServerOptions = {}): Promise<ServerInstance> {
@@ -295,6 +305,63 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
     }
   });
 
+  app.post('/api/auth/login', async (req, res, next) => {
+    try {
+      const { identifier, password, role } = req.body ?? {};
+      if (typeof identifier !== 'string' || !identifier.trim()) {
+        res.status(400).json({ message: '缺少账号标识' });
+        return;
+      }
+      if (typeof role !== 'string') {
+        res.status(400).json({ message: '缺少角色信息' });
+        return;
+      }
+      const normalizedRole = role.trim() as Role;
+      if (!['teacher', 'parent', 'admin', 'student'].includes(normalizedRole)) {
+        res.status(400).json({ message: '不支持的角色' });
+        return;
+      }
+
+      let user = await context.users.get(identifier.trim());
+      if (!user) {
+        const candidates = await context.users.list();
+        user = candidates.find((item) => item.role === normalizedRole && item.name === identifier.trim());
+      }
+
+      if (!user || user.role !== normalizedRole) {
+        res.status(404).json({ message: '用户不存在' });
+        return;
+      }
+
+      const expectedPassword = ROLE_PASSWORDS[normalizedRole];
+      if (expectedPassword && expectedPassword !== password) {
+        res.status(401).json({ message: '密码错误' });
+        return;
+      }
+
+      const payload: Record<string, unknown> = {
+        id: user.id,
+        name: user.name,
+        role: user.role
+      };
+
+      if (user.role === 'teacher') {
+        payload.managedClassIds = (user as TeacherProfile).managedClassIds;
+        payload.courseIds = (user as TeacherProfile).courseIds;
+      }
+
+      if (user.role === 'parent') {
+        const parent = user as ParentProfile;
+        payload.childIds = parent.childIds;
+        payload.settings = parent.settings;
+      }
+
+      res.json({ user: payload });
+    } catch (error) {
+      next(error as Error);
+    }
+  });
+
   app.post('/api/auth/guest', async (req, res, next) => {
     try {
       const name = req.body?.name ?? '游客';
@@ -418,7 +485,7 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
         let status: 'locked' | 'unlocked' | 'completed';
         if (levelRecord) {
           status = 'completed';
-        } else if (isChapterUnlocked && previousLevelsCompleted) {
+        } else if (unlockAllLevelsForTesting || (isChapterUnlocked && previousLevelsCompleted)) {
           status = 'unlocked';
         } else {
           status = 'locked';
@@ -433,6 +500,74 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
     }
 
     return { chapters, statusMap };
+  }
+
+  async function resolveClassStructure(classDef: ClassDefinition) {
+    const courses: Array<{
+      id: string;
+      name: string;
+      description: string;
+      chapters: Array<{
+        id: string;
+        title: string;
+        order: number;
+        levelCount: number;
+        levels: Array<{ id: string; name: string; bestSteps: number; rewards: { stars: number; outfit: string | null } }>; }>; }>= [];
+    let totalLevels = 0;
+
+    for (const courseId of classDef.assignedCourseIds) {
+      const course = await context.courses.get(courseId);
+      if (!course) {
+        continue;
+      }
+
+      const chapterDetails: Array<{
+        id: string;
+        title: string;
+        order: number;
+        levelCount: number;
+        levels: Array<{ id: string; name: string; bestSteps: number; rewards: { stars: number; outfit: string | null } }>;
+      }> = [];
+
+      for (const chapterId of course.chapterIds) {
+        const chapter = await context.chapters.get(chapterId);
+        if (!chapter) {
+          continue;
+        }
+
+        const levels: Array<{ id: string; name: string; bestSteps: number; rewards: { stars: number; outfit: string | null } }> = [];
+        for (const levelId of chapter.levelIds) {
+          const level = await context.levels.get(levelId);
+          if (!level) {
+            continue;
+          }
+          levels.push({
+            id: level.id,
+            name: level.name,
+            bestSteps: level.bestSteps,
+            rewards: level.rewards
+          });
+          totalLevels += 1;
+        }
+
+        chapterDetails.push({
+          id: chapter.id,
+          title: chapter.title,
+          order: chapter.order ?? 0,
+          levelCount: levels.length,
+          levels
+        });
+      }
+
+      courses.push({
+        id: course.id,
+        name: course.name,
+        description: course.description,
+        chapters: chapterDetails
+      });
+    }
+
+    return { courses, totalLevels };
   }
 
   app.get('/api/student/map', requireUser, requireRole('student'), async (req: RequestWithUser, res) => {
@@ -474,7 +609,11 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
     }
 
     const { statusMap } = await resolveStudentLevelStatuses(student);
-    const status = statusMap.get(level.id) ?? 'locked';
+    let status = statusMap.get(level.id) ?? 'locked';
+
+    if (unlockAllLevelsForTesting && status === 'locked') {
+      status = 'unlocked';
+    }
 
     if (status === 'locked') {
       res.status(403).json({ message: '关卡尚未解锁' });
@@ -736,7 +875,45 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
   // 教师端
   app.get('/api/teacher/courses', requireUser, requireRole('teacher'), async (_req: RequestWithUser, res) => {
     const courses = await context.courses.list();
-    res.json({ courses });
+    const enriched = await Promise.all(
+      courses.map(async (course) => {
+        const chapters = await Promise.all(
+          course.chapterIds.map(async (chapterId) => {
+            const chapter = await context.chapters.get(chapterId);
+            if (!chapter) {
+              return undefined;
+            }
+            const levels = await Promise.all(
+              chapter.levelIds.map(async (levelId) => {
+                const level = await context.levels.get(levelId);
+                if (!level) {
+                  return undefined;
+                }
+                return {
+                  id: level.id,
+                  name: level.name,
+                  bestSteps: level.bestSteps,
+                  rewards: level.rewards
+                };
+              })
+            );
+            return {
+              id: chapter.id,
+              title: chapter.title,
+              order: chapter.order ?? 0,
+              levels: levels.filter((item): item is NonNullable<typeof item> => Boolean(item))
+            };
+          })
+        );
+        return {
+          id: course.id,
+          name: course.name,
+          description: course.description,
+          chapters: chapters.filter((item): item is NonNullable<typeof item> => Boolean(item))
+        };
+      })
+    );
+    res.json({ courses: enriched });
   });
 
   app.post('/api/teacher/courses', requireUser, requireRole('teacher'), async (req: RequestWithUser, res) => {
@@ -794,6 +971,157 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
       context.levels.set(level.id, level)
     ]);
     res.status(201).json(level);
+  });
+
+  app.get('/api/teacher/classes', requireUser, requireRole('teacher'), async (req: RequestWithUser, res) => {
+    const teacher = req.user as TeacherProfile;
+    const summaries = await Promise.all(
+      teacher.managedClassIds.map(async (classId) => {
+        const classDef = await context.classes.get(classId);
+        if (!classDef) {
+          return undefined;
+        }
+
+        const students = await Promise.all(classDef.studentIds.map((studentId) => context.users.get(studentId)));
+        const studentProfiles = students.filter((item): item is StudentProfile => Boolean(item && item.role === 'student'));
+
+        const { courses, totalLevels } = await resolveClassStructure(classDef);
+        const progressSnapshots = await Promise.all(
+          studentProfiles.map(async (student) => {
+            const records = await context.progress.get(student.id);
+            const completedLevels = records?.length ?? 0;
+            const lastActiveAt = records && records.length > 0 ? Math.max(...records.map((record) => record.completedAt)) : null;
+            return { completedLevels, lastActiveAt };
+          })
+        );
+
+        const totalCompleted = progressSnapshots.reduce((sum, item) => sum + item.completedLevels, 0);
+        const activeStudents = progressSnapshots.filter((item) =>
+          item.lastActiveAt ? Date.now() - item.lastActiveAt < 7 * 24 * 60 * 60 * 1000 : false
+        ).length;
+        const studentsWithCompletions = progressSnapshots.filter((item) => item.completedLevels > 0).length;
+
+        const averageProgress =
+          totalLevels > 0 && studentProfiles.length > 0
+            ? Math.round((totalCompleted / (totalLevels * studentProfiles.length)) * 100)
+            : 0;
+        const completionRate = studentProfiles.length
+          ? Math.round((studentsWithCompletions / studentProfiles.length) * 100)
+          : 0;
+
+        return {
+          id: classDef.id,
+          name: classDef.name,
+          inviteCode: classDef.inviteCode,
+          studentCount: studentProfiles.length,
+          hintLimit: classDef.hintLimit,
+          activeStudents,
+          averageProgress,
+          completionRate,
+          courseCount: courses.length,
+          levelCount: totalLevels,
+          courses: courses.map((course) => ({
+            id: course.id,
+            name: course.name,
+            chapterCount: course.chapters.length
+          }))
+        };
+      })
+    );
+
+    res.json({ classes: summaries.filter((item): item is NonNullable<typeof item> => Boolean(item)) });
+  });
+
+  app.get('/api/teacher/classes/:classId', requireUser, requireRole('teacher'), async (req: RequestWithUser, res) => {
+    const teacher = req.user as TeacherProfile;
+    if (!teacher.managedClassIds.includes(req.params.classId)) {
+      res.status(403).json({ message: '仅能查看所管理的班级' });
+      return;
+    }
+
+    const classDef = await context.classes.get(req.params.classId);
+    if (!classDef) {
+      res.status(404).json({ message: '班级不存在' });
+      return;
+    }
+
+    const students = await Promise.all(classDef.studentIds.map((studentId) => context.users.get(studentId)));
+    const studentProfiles = students.filter((item): item is StudentProfile => Boolean(item && item.role === 'student'));
+
+    const { courses, totalLevels } = await resolveClassStructure(classDef);
+    const studentDetails = await Promise.all(
+      studentProfiles.map(async (student) => {
+        const records = await context.progress.get(student.id);
+        const completedLevels = records?.length ?? 0;
+        const stars = records?.reduce((sum, record) => sum + (record.stars ?? 0), 0) ?? 0;
+        const lastActiveAt = records && records.length > 0 ? Math.max(...records.map((record) => record.completedAt)) : null;
+        return {
+          id: student.id,
+          name: student.name,
+          completedLevels,
+          totalLevels,
+          stars,
+          lastActiveAt
+        };
+      })
+    );
+
+    const totalCompleted = studentDetails.reduce((sum, item) => sum + item.completedLevels, 0);
+    const studentsWithCompletions = studentDetails.filter((item) => item.completedLevels > 0).length;
+    const averageProgress =
+      totalLevels > 0 && studentDetails.length > 0
+        ? Math.round((totalCompleted / (totalLevels * studentDetails.length)) * 100)
+        : 0;
+    const completionRate = studentDetails.length
+      ? Math.round((studentsWithCompletions / studentDetails.length) * 100)
+      : 0;
+
+    const progressTimeline = (
+      await Promise.all(
+        studentProfiles.map(async (student) => {
+          const records = await context.progress.get(student.id);
+          return (
+            records?.map((record) => ({
+              studentId: student.id,
+              studentName: student.name,
+              levelId: record.levelId,
+              stars: record.stars,
+              completedAt: record.completedAt
+            })) ?? []
+          );
+        })
+      )
+    )
+      .flat()
+      .sort((a, b) => b.completedAt - a.completedAt)
+      .slice(0, 10);
+
+    const pendingWorks = (await context.works.list()).filter(
+      (work) => work.classId === classDef.id && work.status === 'pending'
+    );
+
+    res.json({
+      class: {
+        id: classDef.id,
+        name: classDef.name,
+        inviteCode: classDef.inviteCode,
+        hintLimit: classDef.hintLimit,
+        studentCount: studentDetails.length,
+        levelCount: totalLevels,
+        averageProgress,
+        completionRate
+      },
+      students: studentDetails,
+      courses,
+      recentActivities: progressTimeline,
+      pendingWorks: pendingWorks.map((work) => ({
+        id: work.id,
+        title: work.title,
+        ownerId: work.ownerId,
+        status: work.status,
+        createdAt: work.createdAt
+      }))
+    });
   });
 
   app.put('/api/teacher/levels/:levelId', requireUser, requireRole('teacher'), async (req: RequestWithUser, res) => {
@@ -961,6 +1289,61 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
     res.json({ progress: records ?? [] });
   });
 
+  app.get('/api/parent/settings', requireUser, requireRole('parent'), async (req: RequestWithUser, res) => {
+    const parent = req.user as ParentProfile;
+    res.json(parent.settings);
+  });
+
+  app.put('/api/parent/settings', requireUser, requireRole('parent'), async (req: RequestWithUser, res) => {
+    const parent = req.user as ParentProfile;
+    const payload = req.body ?? {};
+    const nextSettings = {
+      reminderTime: typeof payload.reminderTime === 'string' ? payload.reminderTime : parent.settings.reminderTime,
+      weeklyReportDay:
+        typeof payload.weeklyReportDay === 'string' ? payload.weeklyReportDay : parent.settings.weeklyReportDay,
+      notifyChannels: Array.isArray(payload.notifyChannels)
+        ? payload.notifyChannels.filter((item: unknown): item is 'app' | 'email' | 'sms' =>
+            typeof item === 'string' && ['app', 'email', 'sms'].includes(item)
+          )
+        : parent.settings.notifyChannels
+    };
+    parent.settings = nextSettings;
+    await context.users.set(parent.id, parent);
+    res.json(nextSettings);
+  });
+
+  app.get('/api/parent/overview', requireUser, requireRole('parent'), async (req: RequestWithUser, res) => {
+    const parent = req.user as ParentProfile;
+    const children = await Promise.all(parent.childIds.map((childId) => context.users.get(childId)));
+    const summaries = await Promise.all(
+      children
+        .filter((child): child is StudentProfile => Boolean(child && child.role === 'student'))
+        .map(async (child) => {
+          const progressRecords = await context.progress.get(child.id);
+          const totalDuration = progressRecords?.reduce((sum, record) => sum + (record.duration ?? 0), 0) ?? 0;
+          const completedLevels = progressRecords?.length ?? 0;
+          const lastActiveAt = progressRecords && progressRecords.length > 0
+            ? Math.max(...progressRecords.map((record) => record.completedAt))
+            : null;
+          const weeklyReport = await context.weeklyReports.get(child.id);
+          return {
+            id: child.id,
+            name: child.name,
+            classId: child.classId,
+            completedLevels,
+            totalDuration,
+            lastActiveAt,
+            weeklyReport
+          };
+        })
+    );
+
+    res.json({
+      children: summaries,
+      settings: parent.settings
+    });
+  });
+
   // 管理员
   app.get('/api/admin/overview', requireUser, requireRole('admin'), async (_req: RequestWithUser, res) => {
     const [users, classes, courses, sandbox] = await Promise.all([
@@ -997,9 +1380,49 @@ export async function createServer(options: ServerOptions = {}): Promise<ServerI
       return;
     }
     const id = context.createId(role);
-    const base = { id, name: name ?? '新用户', role } as UserProfile;
-    await context.users.set(id, base);
-    res.status(201).json(base);
+    let profile: UserProfile;
+    switch (role) {
+      case 'teacher':
+        profile = {
+          id,
+          name: name ?? '新教师',
+          role: 'teacher',
+          managedClassIds: [],
+          courseIds: []
+        };
+        break;
+      case 'parent':
+        profile = {
+          id,
+          name: name ?? '新家长',
+          role: 'parent',
+          childIds: [],
+          settings: {
+            reminderTime: '20:00',
+            weeklyReportDay: '周日',
+            notifyChannels: ['app']
+          }
+        };
+        break;
+      case 'admin':
+        profile = { id, name: name ?? '管理员', role: 'admin' };
+        break;
+      default:
+        profile = {
+          id,
+          name: name ?? '新同学',
+          role: 'student',
+          classId: 'unassigned',
+          avatar: { equipped: 'starter-cape', unlocked: ['starter-cape'] },
+          achievements: { badges: [], compendium: [] },
+          settings: { volume: 0.8, lowMotion: false, language: 'zh-CN', resettable: true },
+          sandboxUnlocked: false,
+          progress: {}
+        };
+        break;
+    }
+    await context.users.set(id, profile);
+    res.status(201).json(profile);
   });
 
   app.get('/api/admin/exports/progress', requireUser, requireRole('admin'), async (_req: RequestWithUser, res) => {

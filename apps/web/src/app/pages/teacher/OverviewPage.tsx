@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Progress } from '../../../components/ui/Progress';
@@ -7,73 +6,93 @@ import { Badge } from '../../../components/ui/Badge';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { EmptyState } from '../../../components/ui/EmptyState';
 import { useAppStore } from '../../../store/useAppStore';
-import { apiClient } from '../../../services/api/client';
+import { apiClient, TeacherClassSummary, TeacherCourse } from '../../../services/api/client';
 
 const OverviewPage = () => {
-  const navigate = useNavigate();
-  const [teacherData, setTeacherData] = useState<any>(null);
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  
-  const { isLoggedIn, user } = useAppStore();
+  const { isLoggedIn, user, auth, openAuthModal } = useAppStore((state) => ({
+    isLoggedIn: state.isLoggedIn,
+    user: state.user,
+    auth: state.auth,
+    openAuthModal: state.openAuthModal,
+  }));
 
-  // 重定向到登录页面如果未登录或不是教师
+  const [classes, setClasses] = useState<TeacherClassSummary[]>([]);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [courses, setCourses] = useState<TeacherCourse[]>([]);
+  const [pendingWorks, setPendingWorks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string>();
+
+  const canLoad = isLoggedIn && user?.role === 'teacher';
+
   useEffect(() => {
-    if (!isLoggedIn || user?.role !== 'teacher') {
-      navigate('/auth?mode=teacher');
+    if (!canLoad) {
+      if (!auth.isOpen) {
+        openAuthModal('teacher');
+      }
+      setLoading(false);
       return;
     }
-  }, [isLoggedIn, user, navigate]);
 
-  // 加载教师数据
-  useEffect(() => {
-    if (isLoggedIn && user?.role === 'teacher') {
-      loadTeacherData();
-    }
-  }, [isLoggedIn, user]);
+    const loadTeacherData = async () => {
+      setLoading(true);
+      try {
+        const [classesResponse, analyticsResponse, coursesResponse, pendingResponse] = await Promise.all([
+          apiClient.getTeacherClasses(),
+          apiClient.getTeacherAnalytics(),
+          apiClient.getTeacherCourses(),
+          apiClient.getTeacherPendingWorks()
+        ]);
 
-  const loadTeacherData = async () => {
-    try {
-      const [analyticsResponse, coursesResponse] = await Promise.all([
-        apiClient.getTeacherAnalytics(),
-        apiClient.getTeacherCourses()
-      ]);
+        setClasses(classesResponse.data?.classes ?? []);
+        setAnalytics(analyticsResponse.data ?? null);
+        setCourses(coursesResponse.data?.courses ?? []);
+        setPendingWorks(pendingResponse.data?.works ?? []);
+        setErrorMessage(undefined);
+      } catch (error) {
+        setErrorMessage(error instanceof Error ? error.message : '加载教师数据失败');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      setAnalytics(analyticsResponse.data);
-      setTeacherData(coursesResponse.data);
-    } catch (error) {
-      console.error('加载教师数据失败:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadTeacherData();
+  }, [canLoad, auth.isOpen, openAuthModal]);
 
-  // 模拟数据
-  const mockStats = {
-    activeClasses: 3,
-    totalStudents: 45,
-    completedLevels: 167,
-    averageScore: 85,
-    trends: {
-      classes: '+1 本月',
-      students: '+8 本月',
-      levels: '+23 本周',
-      score: '+5% 提升'
-    }
-  };
+  const totalStudents = useMemo(
+    () => classes.reduce((sum, item) => sum + item.studentCount, 0),
+    [classes]
+  );
+  const averageProgress = useMemo(() => {
+    if (!classes.length) return 0;
+    const total = classes.reduce((sum, item) => sum + item.averageProgress, 0);
+    return Math.round(total / classes.length);
+  }, [classes]);
+  const activeStudents = useMemo(
+    () => classes.reduce((sum, item) => sum + item.activeStudents, 0),
+    [classes]
+  );
 
-  const mockConcepts = [
-    { name: '顺序结构', mastery: 92, studentCount: 41, difficulty: 'easy' },
-    { name: '循环结构', mastery: 78, studentCount: 35, difficulty: 'medium' },
-    { name: '条件判断', mastery: 65, studentCount: 29, difficulty: 'medium' },
-    { name: '变量使用', mastery: 45, studentCount: 20, difficulty: 'hard' },
-  ];
+  const strugglingStudents = useMemo(() => {
+    const items = analytics?.classes ?? [];
+    return items
+      .flatMap((entry: any) =>
+        entry.students.map((student: any) => ({
+          ...student,
+          className: entry.className
+        }))
+      )
+      .filter((student: any) => student.completed <= 1)
+      .slice(0, 5);
+  }, [analytics]);
 
-  const mockAlerts = [
-    { student: '小明', issue: '循环结构卡关超过3天', priority: 'high', days: 3 },
-    { student: '小红', issue: '条件判断理解困难', priority: 'medium', days: 2 },
-    { student: '小刚', issue: '已3天未参与学习', priority: 'high', days: 3 },
-  ];
+  if (!canLoad) {
+    return (
+      <Card title="教师登录" subtitle="请先登录后查看教学概览">
+        <EmptyState title="未登录" description="请通过页面右上角的登录入口选择教师账号。" />
+      </Card>
+    );
+  }
 
   if (loading) {
     return (
@@ -85,13 +104,16 @@ const OverviewPage = () => {
     );
   }
 
+  if (errorMessage) {
+    return <EmptyState title="加载失败" description={errorMessage} />;
+  }
+
   return (
     <div style={{ display: 'grid', gap: '1.5rem' }}>
-      {/* 欢迎卡片 */}
-      <Card 
-        title={`👨‍🏫 欢迎，${user?.name || '教师'}！`} 
+      <Card
+        title={`👨‍🏫 欢迎，${user?.name || '教师'}！`}
         subtitle="教学管理控制台 - 实时监控学生学习状况"
-        style={{ 
+        style={{
           background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
           color: 'white'
         }}
@@ -100,21 +122,20 @@ const OverviewPage = () => {
           <div style={{ fontSize: '3rem' }}>📊</div>
           <div>
             <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '4px' }}>
-              管理 {mockStats.activeClasses} 个班级，{mockStats.totalStudents} 名学生
+              管理 {classes.length} 个班级，{totalStudents} 名学生
             </div>
             <div style={{ fontSize: '14px', opacity: 0.9 }}>
-              本周学生完成了 {mockStats.completedLevels} 个关卡挑战
+              本周学生累计活跃 {activeStudents} 人次，平均进度 {averageProgress}%
             </div>
           </div>
         </div>
       </Card>
 
-      {/* 统计概览 */}
       <Card title="📊 教学概览" subtitle="班级活跃情况与学习成效">
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
-          gap: '16px' 
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: '16px'
         }}>
           <div style={{
             textAlign: 'center',
@@ -125,12 +146,12 @@ const OverviewPage = () => {
           }}>
             <div style={{ fontSize: '3rem', color: '#16a34a', marginBottom: '8px' }}>📚</div>
             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#15803d' }}>
-              {mockStats.activeClasses}
+              {classes.length}
             </div>
             <div style={{ fontSize: '14px', color: '#15803d', marginBottom: '4px' }}>活跃班级</div>
-            <div style={{ fontSize: '12px', color: '#16a34a' }}>{mockStats.trends.classes}</div>
+            <div style={{ fontSize: '12px', color: '#16a34a' }}>实时同步</div>
           </div>
-          
+
           <div style={{
             textAlign: 'center',
             padding: '24px',
@@ -140,12 +161,12 @@ const OverviewPage = () => {
           }}>
             <div style={{ fontSize: '3rem', color: '#2563eb', marginBottom: '8px' }}>👥</div>
             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#1e40af' }}>
-              {mockStats.totalStudents}
+              {totalStudents}
             </div>
             <div style={{ fontSize: '14px', color: '#1e40af', marginBottom: '4px' }}>总学生数</div>
-            <div style={{ fontSize: '12px', color: '#2563eb' }}>{mockStats.trends.students}</div>
+            <div style={{ fontSize: '12px', color: '#2563eb' }}>覆盖全班</div>
           </div>
-          
+
           <div style={{
             textAlign: 'center',
             padding: '24px',
@@ -155,171 +176,130 @@ const OverviewPage = () => {
           }}>
             <div style={{ fontSize: '3rem', color: '#f59e0b', marginBottom: '8px' }}>🎯</div>
             <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#92400e' }}>
-              {mockStats.completedLevels}
+              {classes.reduce((sum, item) => sum + item.levelCount, 0)}
             </div>
-            <div style={{ fontSize: '14px', color: '#92400e', marginBottom: '4px' }}>完成关卡</div>
-            <div style={{ fontSize: '12px', color: '#f59e0b' }}>{mockStats.trends.levels}</div>
+            <div style={{ fontSize: '14px', color: '#92400e', marginBottom: '4px' }}>关卡覆盖数</div>
+            <div style={{ fontSize: '12px', color: '#f59e0b' }}>包含课程章节</div>
           </div>
-          
+
           <div style={{
             textAlign: 'center',
             padding: '24px',
-            background: '#fce7f3',
+            background: '#fee2e2',
             borderRadius: '12px',
-            border: '2px solid #ec4899'
+            border: '2px solid #ef4444'
           }}>
-            <div style={{ fontSize: '3rem', color: '#ec4899', marginBottom: '8px' }}>📈</div>
-            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#9d174d' }}>
-              {mockStats.averageScore}%
+            <div style={{ fontSize: '3rem', color: '#ef4444', marginBottom: '8px' }}>📌</div>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#991b1b' }}>
+              {pendingWorks.length}
             </div>
-            <div style={{ fontSize: '14px', color: '#9d174d', marginBottom: '4px' }}>平均分数</div>
-            <div style={{ fontSize: '12px', color: '#ec4899' }}>{mockStats.trends.score}</div>
+            <div style={{ fontSize: '14px', color: '#991b1b', marginBottom: '4px' }}>待审核作品</div>
+            <div style={{ fontSize: '12px', color: '#ef4444' }}>需教师处理</div>
           </div>
         </div>
       </Card>
 
-      {/* 学习概念掌握度 */}
-      <Card title="📈 概念掌握热力图" subtitle="学生在不同编程概念上的掌握程度">
-        <div style={{ display: 'grid', gap: '16px' }}>
-          {mockConcepts.map((concept) => (
-            <div key={concept.name} style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              padding: '12px',
-              background: '#f8fafc',
-              borderRadius: '8px',
-              border: '1px solid #e2e8f0'
-            }}>
-              <div style={{ flex: 1, marginRight: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span style={{ fontWeight: 'bold', color: '#374151' }}>{concept.name}</span>
-                  <Badge tone={
-                    concept.difficulty === 'easy' ? 'success' :
-                    concept.difficulty === 'medium' ? 'warning' : 'danger'
-                  }>
-                    {concept.difficulty === 'easy' ? '简单' :
-                     concept.difficulty === 'medium' ? '中等' : '困难'}
-                  </Badge>
-                </div>
-                <Progress 
-                  value={concept.mastery} 
-                  label={`${concept.studentCount}/${mockStats.totalStudents} 名学生掌握`}
-                />
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#6366f1' }}>
-                  {concept.mastery}%
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        <div style={{ marginTop: '20px', textAlign: 'center' }}>
-          <Button 
-            variant="primary"
-            onClick={() => navigate('/teacher/analytics')}
-          >
-            查看详细分析
-          </Button>
-        </div>
-      </Card>
-
-      {/* 需要关注的学生 */}
-      <Card title="⚠️ 需要关注的学生" subtitle="学习进度较慢或遇到困难的学生">
-        {mockAlerts.length > 0 ? (
+      <Card title="🏫 班级活跃度" subtitle="掌握每个班级的实时进度">
+        {classes.length === 0 ? (
+          <EmptyState title="暂无班级数据" description="创建班级后可在此查看活跃度。" />
+        ) : (
           <div style={{ display: 'grid', gap: '12px' }}>
-            {mockAlerts.map((alert, index) => (
-              <div 
-                key={index}
-                style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
+            {classes.map((classItem) => (
+              <div
+                key={classItem.id}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr) auto',
+                  gap: '12px',
                   alignItems: 'center',
-                  padding: '12px',
-                  background: alert.priority === 'high' ? '#fef2f2' : '#fefce8',
-                  borderRadius: '8px',
-                  border: `2px solid ${alert.priority === 'high' ? '#dc2626' : '#f59e0b'}`
+                  padding: '16px',
+                  background: '#f8fafc',
+                  borderRadius: '12px'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ fontSize: '1.2rem' }}>
-                    {alert.priority === 'high' ? '🚨' : '⚠️'}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 'bold', color: '#374151' }}>
-                      {alert.student}
-                    </div>
-                    <div style={{ fontSize: '14px', color: '#6b7280' }}>
-                      {alert.issue}
-                    </div>
+                <div>
+                  <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{classItem.name}</div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>
+                    {classItem.studentCount} 名学生 · 邀请码 {classItem.inviteCode}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Badge tone={alert.priority === 'high' ? 'danger' : 'warning'}>
-                    {alert.days}天前
-                  </Badge>
-                  <Button variant="ghost" size="sm">
-                    查看详情
-                  </Button>
-                </div>
+                <Progress value={classItem.averageProgress} label="平均完成度" />
+                <Badge tone={classItem.completionRate >= 70 ? 'success' : classItem.completionRate >= 40 ? 'warning' : 'danger'}>
+                  活跃 {classItem.activeStudents} 人
+                </Badge>
               </div>
             ))}
           </div>
-        ) : (
-          <EmptyState title="暂无需要关注的学生" description="所有学生学习状况良好" />
         )}
-        
-        <div style={{ 
-          marginTop: '20px', 
-          display: 'flex', 
-          gap: '12px', 
-          justifyContent: 'center' 
-        }}>
-          <Button variant="primary">
-            📝 生成个性化辅导计划
-          </Button>
-          <Button variant="secondary">
-            📧 发送家长通知
-          </Button>
-        </div>
       </Card>
 
-      {/* 快捷操作 */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-        gap: '16px' 
-      }}>
-        <Card 
-          title="📚 课程管理" 
-          subtitle="创建和编辑课程内容"
-          style={{ cursor: 'pointer' }}
-          onClick={() => navigate('/teacher/content')}
-        />
-        
-        <Card 
-          title="👥 班级管理" 
-          subtitle="管理学生和班级设置"
-          style={{ cursor: 'pointer' }}
-          onClick={() => navigate('/teacher/classes')}
-        />
-        
-        <Card 
-          title="📊 教学分析" 
-          subtitle="深入的学习数据分析"
-          style={{ cursor: 'pointer' }}
-          onClick={() => navigate('/teacher/analytics')}
-        />
-        
-        <Card 
-          title="📋 作业布置" 
-          subtitle="为学生布置练习作业"
-          style={{ cursor: 'pointer' }}
-          onClick={() => navigate('/teacher/assignments')}
-        />
-      </div>
+      <Card title="⚠️ 学习预警" subtitle="优先关注进度落后的学生">
+        {strugglingStudents.length === 0 ? (
+          <EmptyState title="暂无需要关注的学生" description="所有学生的进度均稳定。" />
+        ) : (
+          <div style={{ display: 'grid', gap: '12px' }}>
+            {strugglingStudents.map((student: any) => (
+              <div
+                key={student.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '16px',
+                  borderRadius: '12px',
+                  border: '1px solid #fee2e2',
+                  background: '#fef2f2'
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 'bold', color: '#b91c1c' }}>{student.name}</div>
+                  <div style={{ fontSize: '13px', color: '#7f1d1d' }}>
+                    班级：{student.className} · 已完成 {student.completed} 个关卡
+                  </div>
+                </div>
+                <Badge tone="danger">待辅导</Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card title="📝 待处理事项" subtitle="来自系统的即时提醒">
+        <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: '12px' }}>
+          <li
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px',
+              background: '#f8fafc',
+              borderRadius: '12px'
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 'bold', color: '#0f172a' }}>待审核作品</div>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>当前有 {pendingWorks.length} 个作品等待审核</div>
+            </div>
+            <Button variant="secondary">前往作品库</Button>
+          </li>
+          <li
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px',
+              background: '#f8fafc',
+              borderRadius: '12px'
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 'bold', color: '#0f172a' }}>课程内容</div>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>已上线 {courses.length} 套课程，保持定期更新</div>
+            </div>
+            <Button variant="secondary">查看内容库</Button>
+          </li>
+        </ul>
+      </Card>
     </div>
   );
 };

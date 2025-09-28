@@ -7,8 +7,8 @@ import { Badge } from '../../../components/ui/Badge';
 import { Progress } from '../../../components/ui/Progress';
 import { Skeleton } from '../../../components/ui/Skeleton';
 import { useAppStore } from '../../../store/useAppStore';
-import { BlockEditor } from '../../../../student/src/BlockEditor';
-import { GameCanvas } from '../../../../student/src/GameCanvas';
+import { BlockEditor } from '@student/BlockEditor';
+import { GameCanvas } from '@student/GameCanvas';
 import { Level } from '../../../services/api/client';
 import { apiClient } from '../../../services/api/client';
 
@@ -46,16 +46,28 @@ const PlayPage = () => {
     getHint,
     resetGame,
     setCurrentLevel,
-    setProgram
-  } = useAppStore();
+    setProgram,
+    openAuthModal,
+  } = useAppStore((state) => ({
+    game: state.game,
+    loading: state.loading,
+    error: state.error,
+    isLoggedIn: state.isLoggedIn,
+    runProgram: state.runProgram,
+    completeLevel: state.completeLevel,
+    getHint: state.getHint,
+    resetGame: state.resetGame,
+    setCurrentLevel: state.setCurrentLevel,
+    setProgram: state.setProgram,
+    openAuthModal: state.openAuthModal,
+  }));
 
   // 重定向到登录页面如果未登录
   useEffect(() => {
     if (!isLoggedIn) {
-      navigate('/auth');
-      return;
+      openAuthModal('student');
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, openAuthModal]);
 
   // 加载关卡数据
   useEffect(() => {

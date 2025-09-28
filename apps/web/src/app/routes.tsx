@@ -83,7 +83,7 @@ const ParentRoutes = () => (
     description="掌握孩子进度、练习记录与家庭设置"
     routes={[
       { to: '/parent', label: '首页' },
-      { to: '/parent/progress/child-1', label: '进度详情' },
+      { to: '/parent/progress', label: '进度详情' },
       { to: '/parent/settings', label: '家长设置' },
     ]}
   >
@@ -149,6 +149,7 @@ export const AppRoutes = () =>
           element: <ParentRoutes />,
           children: [
             { index: true, element: <ParentHomePage /> },
+            { path: 'progress', element: <ParentProgressPage /> },
             { path: 'progress/:childId', element: <ParentProgressPage /> },
             { path: 'settings', element: <ParentSettingsPage /> },
           ],

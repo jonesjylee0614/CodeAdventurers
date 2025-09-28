@@ -155,14 +155,24 @@ const AchievementsPage = () => {
     error,
     isLoggedIn,
     loadStudentData,
-    loadChapters
-  } = useAppStore();
+    loadChapters,
+    openAuthModal,
+  } = useAppStore((state) => ({
+    user: state.user,
+    chapters: state.chapters,
+    loading: state.loading,
+    error: state.error,
+    isLoggedIn: state.isLoggedIn,
+    loadStudentData: state.loadStudentData,
+    loadChapters: state.loadChapters,
+    openAuthModal: state.openAuthModal,
+  }));
 
   useEffect(() => {
     if (!isLoggedIn) {
-      navigate('/auth');
+      openAuthModal('student');
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, openAuthModal]);
 
   useEffect(() => {
     if (isLoggedIn && user?.role === 'student') {

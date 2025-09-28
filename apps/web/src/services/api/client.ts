@@ -34,6 +34,24 @@ export interface StudentProfile extends User {
   progress: Record<string, any>;
 }
 
+export interface ParentSettings {
+  reminderTime: string;
+  weeklyReportDay: string;
+  notifyChannels: Array<'app' | 'email' | 'sms'>;
+}
+
+export interface TeacherProfile extends User {
+  role: 'teacher';
+  managedClassIds: string[];
+  courseIds: string[];
+}
+
+export interface ParentProfile extends User {
+  role: 'parent';
+  childIds: string[];
+  settings: ParentSettings;
+}
+
 export interface StudentLevelProgress {
   levelId: string;
   stars: number;
@@ -41,6 +59,114 @@ export interface StudentLevelProgress {
   hints: number;
   duration: number;
   bestDifference: number;
+}
+
+export interface ParentProgressRecord {
+  levelId: string;
+  stars: number;
+  steps: number;
+  hints: number;
+  duration: number;
+  bestDifference: number;
+  completedAt: number;
+  replayLog: unknown[];
+}
+
+export interface WeeklyReport {
+  childId: string;
+  generatedAt: number;
+  summary: string;
+  conceptsLearned: string[];
+  commonMistakes: string[];
+  recommendations: string[];
+}
+
+export interface TeacherCourseChapter {
+  id: string;
+  title: string;
+  order: number;
+  levels: Array<{ id: string; name: string; bestSteps: number; rewards: { stars: number; outfit: string | null } }>;
+}
+
+export interface TeacherCourse {
+  id: string;
+  name: string;
+  description: string;
+  chapters: TeacherCourseChapter[];
+}
+
+export interface TeacherClassSummary {
+  id: string;
+  name: string;
+  inviteCode: string;
+  studentCount: number;
+  hintLimit: number;
+  activeStudents: number;
+  averageProgress: number;
+  completionRate: number;
+  courseCount: number;
+  levelCount: number;
+  courses: Array<{ id: string; name: string; chapterCount: number }>;
+}
+
+export interface TeacherClassDetail {
+  class: {
+    id: string;
+    name: string;
+    inviteCode: string;
+    hintLimit: number;
+    studentCount: number;
+    levelCount: number;
+    averageProgress: number;
+    completionRate: number;
+  };
+  students: Array<{
+    id: string;
+    name: string;
+    completedLevels: number;
+    totalLevels: number;
+    stars: number;
+    lastActiveAt: number | null;
+  }>;
+  courses: Array<{
+    id: string;
+    name: string;
+    description: string;
+    chapters: Array<{
+      id: string;
+      title: string;
+      order: number;
+      levelCount: number;
+      levels: Array<{ id: string; name: string; bestSteps: number; rewards: { stars: number; outfit: string | null } }>;
+    }>;
+  }>;
+  recentActivities: Array<{
+    studentId: string;
+    studentName: string;
+    levelId: string;
+    stars: number;
+    completedAt: number;
+  }>;
+  pendingWorks: Array<{
+    id: string;
+    title: string;
+    ownerId: string;
+    status: string;
+    createdAt: number;
+  }>;
+}
+
+export interface ParentOverview {
+  children: Array<{
+    id: string;
+    name: string;
+    classId: string;
+    completedLevels: number;
+    totalDuration: number;
+    lastActiveAt: number | null;
+    weeklyReport?: WeeklyReport;
+  }>;
+  settings: ParentSettings;
 }
 
 export interface Level {
@@ -54,7 +180,7 @@ export interface Level {
     walkable: boolean;
     collectible?: string;
   }>;
-  start: { x: number; y: number; facing: string };
+  start: { x: number; y: number; facing: 'north' | 'south' | 'east' | 'west' };
   goal: any;
   bestSteps: number;
   hints: string[];
@@ -81,7 +207,7 @@ export interface Chapter {
 class ApiClient {
   private userId: string | null = null;
 
-  setUserId(userId: string) {
+  setUserId(userId: string | null) {
     this.userId = userId;
   }
 
@@ -183,6 +309,14 @@ class ApiClient {
     return this.post('/auth/class', { inviteCode, name });
   }
 
+  async loginWithCredentials(payload: {
+    identifier: string;
+    password: string;
+    role: 'teacher' | 'parent' | 'admin' | 'student';
+  }): Promise<ApiResponse<{ user: TeacherProfile | ParentProfile | User }>> {
+    return this.post('/auth/login', payload);
+  }
+
   // 学生端API
   async getStudentProfile(): Promise<ApiResponse<StudentProfile>> {
     return this.get('/student/profile');
@@ -245,8 +379,8 @@ class ApiClient {
     return this.put('/student/avatar', { equipped });
   }
 
-  // 教师端API (基础结构)
-  async getTeacherCourses(): Promise<ApiResponse<{ courses: any[] }>> {
+  // 教师端API
+  async getTeacherCourses(): Promise<ApiResponse<{ courses: TeacherCourse[] }>> {
     return this.get('/teacher/courses');
   }
 
@@ -254,9 +388,57 @@ class ApiClient {
     return this.get('/teacher/analytics/progress');
   }
 
-  // 家长端API (基础结构) 
-  async getParentChildren(): Promise<ApiResponse<{ children: any[] }>> {
+  async getTeacherHeatmap(): Promise<ApiResponse<{ heatmap: Array<{ studentId: string; entries: Array<{ levelId: string; stars: number; duration: number }> }> }>> {
+    return this.get('/teacher/analytics/heatmap');
+  }
+
+  async getTeacherClasses(): Promise<ApiResponse<{ classes: TeacherClassSummary[] }>> {
+    return this.get('/teacher/classes');
+  }
+
+  async getTeacherClassDetail(classId: string): Promise<ApiResponse<TeacherClassDetail>> {
+    return this.get(`/teacher/classes/${classId}`);
+  }
+
+  async getTeacherPendingWorks(): Promise<ApiResponse<{ works: any[] }>> {
+    return this.get('/teacher/works/pending');
+  }
+
+  async reviewTeacherWork(workId: string, status: 'approved' | 'rejected'): Promise<ApiResponse<any>> {
+    return this.post(`/teacher/works/${workId}/review`, { status });
+  }
+
+  async assignCourseToClass(classId: string, courseId: string): Promise<ApiResponse<any>> {
+    return this.post(`/teacher/classes/${classId}/assign-course`, { courseId });
+  }
+
+  async updateClassHintLimit(classId: string, hintLimit: number): Promise<ApiResponse<any>> {
+    return this.patch(`/teacher/classes/${classId}/hint-limit`, { hintLimit });
+  }
+
+  // 家长端API
+  async getParentChildren(): Promise<ApiResponse<{ children: Array<{ id: string; name: string }> }>> {
     return this.get('/parent/children');
+  }
+
+  async getParentOverview(): Promise<ApiResponse<ParentOverview>> {
+    return this.get('/parent/overview');
+  }
+
+  async getParentWeeklyReport(childId: string): Promise<ApiResponse<WeeklyReport>> {
+    return this.get(`/parent/children/${childId}/weekly-report`);
+  }
+
+  async getParentProgress(childId: string): Promise<ApiResponse<{ progress: ParentProgressRecord[] }>> {
+    return this.get(`/parent/children/${childId}/progress`);
+  }
+
+  async getParentSettings(): Promise<ApiResponse<ParentSettings>> {
+    return this.get('/parent/settings');
+  }
+
+  async updateParentSettings(settings: Partial<ParentSettings> & { notifyChannels?: ParentSettings['notifyChannels'] }): Promise<ApiResponse<ParentSettings>> {
+    return this.put('/parent/settings', settings);
   }
 
   // 管理员API (基础结构)

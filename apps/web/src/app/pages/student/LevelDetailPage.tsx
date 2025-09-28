@@ -20,7 +20,10 @@ const BLOCK_LABELS: Record<string, string> = {
 const LevelDetailPage = () => {
   const { levelId } = useParams();
   const navigate = useNavigate();
-  const { isLoggedIn } = useAppStore();
+  const { isLoggedIn, openAuthModal } = useAppStore((state) => ({
+    isLoggedIn: state.isLoggedIn,
+    openAuthModal: state.openAuthModal,
+  }));
 
   const [level, setLevel] = useState<Level | null>(null);
   const [prep, setPrep] = useState<{ victoryCondition: any; allowedBlocks: string[]; comic?: string; rewards?: any } | null>(null);
@@ -85,8 +88,11 @@ const LevelDetailPage = () => {
     return (
       <Card title="请先登录">
         <p>登录后即可查看关卡详情。</p>
-        <Button variant="primary" onClick={() => navigate('/auth')}>
-          前往登录
+        <Button
+          variant="primary"
+          onClick={() => openAuthModal('student')}
+        >
+          打开登录窗口
         </Button>
       </Card>
     );

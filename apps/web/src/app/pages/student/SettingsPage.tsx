@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -19,8 +18,12 @@ const settingsSchema = z.object({
 type SettingsForm = z.infer<typeof settingsSchema>;
 
 const SettingsPage = () => {
-  const navigate = useNavigate();
-  const { isLoggedIn, loadStudentData, user } = useAppStore();
+  const { isLoggedIn, loadStudentData, user, openAuthModal } = useAppStore((state) => ({
+    isLoggedIn: state.isLoggedIn,
+    loadStudentData: state.loadStudentData,
+    user: state.user,
+    openAuthModal: state.openAuthModal,
+  }));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -44,7 +47,7 @@ const SettingsPage = () => {
 
   useEffect(() => {
     if (!isLoggedIn) {
-      navigate('/auth');
+      openAuthModal('student');
       return;
     }
 
@@ -74,7 +77,7 @@ const SettingsPage = () => {
     };
 
     void loadSettings();
-  }, [isLoggedIn, navigate, reset]);
+  }, [isLoggedIn, openAuthModal, reset]);
 
   const onSubmit = async (values: SettingsForm) => {
     setFeedback(null);

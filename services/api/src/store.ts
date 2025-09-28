@@ -76,9 +76,16 @@ export interface TeacherProfile extends UserBase {
   courseIds: string[];
 }
 
+export interface ParentSettings {
+  reminderTime: string;
+  weeklyReportDay: string;
+  notifyChannels: Array<'app' | 'email' | 'sms'>;
+}
+
 export interface ParentProfile extends UserBase {
   role: 'parent';
   childIds: string[];
+  settings: ParentSettings;
 }
 
 export interface AdminProfile extends UserBase {

@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
 import { Children, cloneElement, isValidElement, useMemo, useState } from 'react';
 import clsx from 'clsx';
 
@@ -19,11 +19,13 @@ interface TabsProps {
 export const Tabs = ({ children, defaultTab, onTabChange }: PropsWithChildren<TabsProps>) => {
   const tabs = useMemo(
     () =>
-      Children.toArray(children).filter(isValidElement).map((child) => ({
-        id: child.props.id as string,
-        title: child.props.title as ReactNode,
-        content: child,
-      })),
+      Children.toArray(children)
+        .filter((child): child is ReactElement<TabItemProps> => isValidElement(child))
+        .map((child) => ({
+          id: child.props.id,
+          title: child.props.title,
+          content: child,
+        })),
     [children],
   );
 

@@ -6,6 +6,7 @@ type ClassDefinition = StoreModule.ClassDefinition;
 type CompendiumEntry = StoreModule.CompendiumEntry;
 type CourseDefinition = StoreModule.CourseDefinition;
 type DataContext = StoreModule.DataContext;
+type ParentProfile = StoreModule.ParentProfile;
 type StudentProfile = StoreModule.StudentProfile;
 type TeacherProfile = StoreModule.TeacherProfile;
 type WeeklyReport = StoreModule.WeeklyReport;
@@ -32,11 +33,16 @@ export async function seedData(store: DataContext, options: SeedOptions = {}): P
     courseIds: ['course-1']
   };
 
-  const parent = {
+  const parent: ParentProfile = {
     id: 'parent-1',
     name: '陈妈妈',
     role: 'parent' as const,
-    childIds: ['student-1']
+    childIds: ['student-1'],
+    settings: {
+      reminderTime: '20:00',
+      weeklyReportDay: '周日',
+      notifyChannels: ['app', 'email']
+    }
   };
 
   const admin: AdminProfile = {
