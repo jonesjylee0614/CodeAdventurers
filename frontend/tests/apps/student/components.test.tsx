@@ -42,21 +42,42 @@ describe('Student components', () => {
     } as SimulationResult;
 
     render(<ResultSummary result={result} />);
-    expect(screen.getByText('成功通关！')).toBeInTheDocument();
-    expect(screen.getByText(/本次步数/)).toHaveTextContent('4');
+    expect(screen.getByText(/成功通关！/)).toBeInTheDocument();
+    const stepLabel = screen.getByText(/本次步数/);
+    expect(stepLabel.nextElementSibling).not.toBeNull();
+    expect(stepLabel.nextElementSibling).toHaveTextContent('4');
   });
 
   it('shows hint modal content', () => {
     const onClose = jest.fn();
-    render(<HintModal hint="试试重复积木" onClose={onClose} />);
-    fireEvent.click(screen.getByText('收到'));
+    render(<HintModal hint="试试重复积木" onClose={onClose} isVisible />);
+    fireEvent.click(screen.getByText('收到提示'));
     expect(onClose).toHaveBeenCalled();
   });
 
   it('navigates between levels on map', () => {
     const onSelect = jest.fn();
-    render(<AdventureMap levels={[level]} onSelect={onSelect} />);
-    fireEvent.click(screen.getByRole('button', { name: '首关演示' }));
+    render(
+      <AdventureMap
+        chapters={[
+          {
+            id: 'ch1',
+            title: '第一章',
+            levels: [
+              {
+                id: level.id,
+                name: level.name,
+                status: 'unlocked' as const,
+                stars: 0,
+              },
+            ],
+          },
+        ]}
+        onSelect={onSelect}
+      />
+    );
+
+    fireEvent.click(screen.getByText('首关演示'));
     expect(onSelect).toHaveBeenCalledWith('sample-1');
   });
 });

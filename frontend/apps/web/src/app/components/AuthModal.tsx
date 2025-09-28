@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { TabSwitcher, Tab } from '../../components/ui/TabSwitcher';
 import { useAppStore, AuthMode } from '../../store/useAppStore';
+import './auth-modal.css';
 
 const AUTH_TABS: Tab[] = [
   { id: 'guest', label: '游客体验', icon: '👤' },
@@ -129,164 +130,149 @@ export const AuthModal = () => {
 
   return (
     <>
-      <Modal
-        title="登录编程冒险家"
-        open={auth.isOpen}
-        onClose={handleClose}
-      >
-        <div style={{ display: 'grid', gap: '20px' }}>
-          <div style={{ textAlign: 'center' }}>
-            <h3 style={{ margin: '0 0 8px 0', color: '#0f172a' }}>🚀 欢迎回来</h3>
-            <p style={{ margin: 0, color: '#475569', fontSize: '14px' }}>
-              选择一种方式登录，继续你的冒险旅程
-            </p>
+      <Modal title="登录编程冒险家" open={auth.isOpen} onClose={handleClose}>
+        <div className="auth-modal">
+          <section className="auth-modal__hero">
+            <h3 className="auth-modal__hero-title">🚀 欢迎回来</h3>
+            <p className="auth-modal__hero-subtitle">选择一种方式登录，继续你的冒险旅程</p>
+            <div className="auth-modal__badges">
+              <span className="auth-modal__badge">✨ 一键体验</span>
+              <span className="auth-modal__badge">🛡️ 数据安全保存</span>
+              <span className="auth-modal__badge">👥 多角色切换</span>
+            </div>
+          </section>
+
+          <div className="auth-modal__content">
+            <aside className="auth-modal__summary">
+              <h4 className="auth-modal__summary-title">登录后你可以</h4>
+              <ul className="auth-modal__summary-list">
+                <li>📚 同步课程进度与成就徽章</li>
+                <li>🏫 加入或管理班级，查看学习分析</li>
+                <li>👨‍👩‍👧 家长实时跟进学习周报</li>
+              </ul>
+              <div className="auth-modal__divider" />
+              <div className="auth-modal__credentials">
+                <div>演示账号：</div>
+                <div>教师 <strong>teacher-1 / teach123</strong></div>
+                <div>家长 <strong>parent-1 / parent123</strong></div>
+              </div>
+            </aside>
+
+            <div className="auth-modal__panel">
+              <div className="auth-modal__tabs">
+                <TabSwitcher tabs={tabs} activeTab={activeTab} onTabChange={(tabId) => setActiveTab(tabId as AuthMode)} />
+
+                {showError && error && (
+                  <div role="alert" className="auth-modal__error">
+                    {error}
+                  </div>
+                )}
+              </div>
+
+              {activeTab === 'guest' && (
+                <div className="auth-modal__form">
+                  <div>
+                    <h4>👤 游客模式</h4>
+                    <p>快速体验平台核心玩法，数据会保存在当前设备中。</p>
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="输入昵称（可选）"
+                    value={guestName}
+                    onChange={(event) => setGuestName(event.target.value)}
+                    maxLength={20}
+                  />
+                  <div className="auth-modal__actions">
+                    <Button variant="primary" loading={loading} onClick={handleGuestLogin}>
+                      开始体验
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'student' && (
+                <div className="auth-modal__form">
+                  <div>
+                    <h4>🎓 学生登录</h4>
+                    <p>输入你的姓名与班级邀请码加入老师创建的课堂。</p>
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="输入你的姓名"
+                    value={studentName}
+                    onChange={(event) => setStudentName(event.target.value)}
+                    maxLength={20}
+                  />
+                  <Input
+                    type="text"
+                    placeholder="班级邀请码"
+                    value={inviteCode}
+                    onChange={(event) => setInviteCode(event.target.value.toUpperCase())}
+                    maxLength={10}
+                    style={{ textTransform: 'uppercase', letterSpacing: '1px' }}
+                  />
+                  <div className="auth-modal__actions">
+                    <Button variant="primary" loading={loading} onClick={handleJoinClass}>
+                      加入班级
+                    </Button>
+                  </div>
+                  <div className="auth-modal__hint">没有邀请码？请联系你的老师获取</div>
+                </div>
+              )}
+
+              {activeTab === 'teacher' && (
+                <div className="auth-modal__form">
+                  <div>
+                    <h4>👨‍🏫 教师登录</h4>
+                    <p>使用教师账号进入班级管理与教学分析。</p>
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="教师账号或姓名"
+                    value={teacherAccount}
+                    onChange={(event) => setTeacherAccount(event.target.value)}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="密码"
+                    value={teacherPassword}
+                    onChange={(event) => setTeacherPassword(event.target.value)}
+                  />
+                  <div className="auth-modal__actions">
+                    <Button variant="primary" loading={loading} onClick={() => handleRoleLogin('teacher')}>
+                      登录教师后台
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'parent' && (
+                <div className="auth-modal__form">
+                  <div>
+                    <h4>👨‍👩‍👧‍👦 家长登录</h4>
+                    <p>跟踪孩子的学习动态与周报。</p>
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="家长账号或姓名"
+                    value={parentAccount}
+                    onChange={(event) => setParentAccount(event.target.value)}
+                  />
+                  <Input
+                    type="password"
+                    placeholder="密码"
+                    value={parentPassword}
+                    onChange={(event) => setParentPassword(event.target.value)}
+                  />
+                  <div className="auth-modal__actions">
+                    <Button variant="primary" loading={loading} onClick={() => handleRoleLogin('parent')}>
+                      登录家长中心
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-
-          <TabSwitcher
-            tabs={tabs}
-            activeTab={activeTab}
-            onTabChange={(tabId) => setActiveTab(tabId as AuthMode)}
-          />
-
-          {showError && error && (
-            <div
-              role="alert"
-              style={{
-                background: '#fee2e2',
-                borderRadius: '8px',
-                padding: '12px',
-                color: '#b91c1c',
-                fontSize: '13px',
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          {activeTab === 'guest' && (
-            <div style={{ display: 'grid', gap: '16px' }}>
-              <div>
-                <h4 style={{ margin: '0 0 8px 0', color: '#1e293b' }}>👤 游客模式</h4>
-                <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>
-                  快速体验平台核心玩法，数据会保存在当前设备中。
-                </p>
-              </div>
-              <Input
-                type="text"
-                placeholder="输入昵称（可选）"
-                value={guestName}
-                onChange={(event) => setGuestName(event.target.value)}
-                maxLength={20}
-              />
-              <Button
-                variant="primary"
-                loading={loading}
-                onClick={handleGuestLogin}
-                style={{ width: '100%' }}
-              >
-                开始体验
-              </Button>
-            </div>
-          )}
-
-          {activeTab === 'student' && (
-            <div style={{ display: 'grid', gap: '16px' }}>
-              <div>
-                <h4 style={{ margin: '0 0 8px 0', color: '#1e293b' }}>🎓 学生登录</h4>
-                <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>
-                  输入你的姓名与班级邀请码加入老师创建的课堂。
-                </p>
-              </div>
-              <Input
-                type="text"
-                placeholder="输入你的姓名"
-                value={studentName}
-                onChange={(event) => setStudentName(event.target.value)}
-                maxLength={20}
-              />
-              <Input
-                type="text"
-                placeholder="班级邀请码"
-                value={inviteCode}
-                onChange={(event) => setInviteCode(event.target.value.toUpperCase())}
-                maxLength={10}
-                style={{ textTransform: 'uppercase', letterSpacing: '1px' }}
-              />
-              <Button
-                variant="primary"
-                loading={loading}
-                onClick={handleJoinClass}
-                style={{ width: '100%' }}
-              >
-                加入班级
-              </Button>
-              <div style={{ textAlign: 'center', fontSize: '12px', color: '#94a3b8' }}>
-                没有邀请码？请联系你的老师获取
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'teacher' && (
-            <div style={{ display: 'grid', gap: '16px' }}>
-              <div>
-                <h4 style={{ margin: '0 0 8px 0', color: '#1e293b' }}>👨‍🏫 教师登录</h4>
-                <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>
-                  使用教师账号进入班级管理与教学分析。演示环境可使用 <strong>teacher-1 / teach123</strong>。
-                </p>
-              </div>
-              <Input
-                type="text"
-                placeholder="教师账号或姓名"
-                value={teacherAccount}
-                onChange={(event) => setTeacherAccount(event.target.value)}
-              />
-              <Input
-                type="password"
-                placeholder="密码"
-                value={teacherPassword}
-                onChange={(event) => setTeacherPassword(event.target.value)}
-              />
-              <Button
-                variant="primary"
-                loading={loading}
-                onClick={() => handleRoleLogin('teacher')}
-                style={{ width: '100%' }}
-              >
-                登录教师后台
-              </Button>
-            </div>
-          )}
-
-          {activeTab === 'parent' && (
-            <div style={{ display: 'grid', gap: '16px' }}>
-              <div>
-                <h4 style={{ margin: '0 0 8px 0', color: '#1e293b' }}>👨‍👩‍👧‍👦 家长登录</h4>
-                <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>
-                  跟踪孩子的学习动态与周报。演示账号为 <strong>parent-1 / parent123</strong>。
-                </p>
-              </div>
-              <Input
-                type="text"
-                placeholder="家长账号或姓名"
-                value={parentAccount}
-                onChange={(event) => setParentAccount(event.target.value)}
-              />
-              <Input
-                type="password"
-                placeholder="密码"
-                value={parentPassword}
-                onChange={(event) => setParentPassword(event.target.value)}
-              />
-              <Button
-                variant="primary"
-                loading={loading}
-                onClick={() => handleRoleLogin('parent')}
-                style={{ width: '100%' }}
-              >
-                登录家长中心
-              </Button>
-            </div>
-          )}
         </div>
       </Modal>
 

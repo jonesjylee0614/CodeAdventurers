@@ -1,27 +1,20 @@
 import * as React from 'react';
-import * as Engine from '../../../packages/engine/src/index.ts';
+import * as Engine from '@engine/index.ts';
 
 type Instruction = Engine.Instruction;
 type LevelDefinition = Engine.LevelDefinition;
 type SimulationResult = Engine.SimulationResult;
 
-interface BlockType {
+type BlockCategory = 'action' | 'control' | 'condition';
+
+type BlockType = {
   id: string;
   type: Instruction['type'];
   label: string;
   color: string;
   icon: string;
-  category: 'action' | 'control' | 'condition';
-}
-
-const BLOCK_TYPES: BlockType[] = [
-  { id: 'move', type: 'move', label: '向前移动', color: '#4CAF50', icon: '↑', category: 'action' },
-  { id: 'turn-left', type: 'turn', label: '向左转', color: '#2196F3', icon: '↶', category: 'action' },
-  { id: 'turn-right', type: 'turn', label: '向右转', color: '#2196F3', icon: '↷', category: 'action' },
-  { id: 'collect', type: 'collect', label: '收集', color: '#FF9800', icon: '⭐', category: 'action' },
-  { id: 'repeat', type: 'repeat', label: '重复', color: '#9C27B0', icon: '🔄', category: 'control' },
-  { id: 'if', type: 'conditional', label: '如果', color: '#F44336', icon: '❓', category: 'condition' },
-];
+  category: BlockCategory;
+};
 
 interface BlockConfig {
   repeatTimes?: number;
@@ -33,14 +26,14 @@ interface ProgramBlock {
   blockType: BlockType;
   config: BlockConfig;
   children?: ProgramBlock[];
-  config: BlockConfig;
 }
 
 type BlockPath = number[];
 
-type DraggedItem =
-  | { source: 'palette'; blockType: BlockType }
-  | { source: 'program'; path: BlockPath };
+type DragTarget = {
+  path: BlockPath | null;
+  index: number;
+};
 
 interface BlockEditorProps {
   level: LevelDefinition;
@@ -50,49 +43,55 @@ interface BlockEditorProps {
   onProgramChange?: (program: Instruction[]) => void;
 }
 
+const BLOCK_TYPES: BlockType[] = [
+  { id: 'move', type: 'move', label: '向前移动', color: '#0ea5e9', icon: '⬆️', category: 'action' },
+  { id: 'turn-left', type: 'turn', label: '向左转', color: '#6366f1', icon: '↰', category: 'action' },
+  { id: 'turn-right', type: 'turn', label: '向右转', color: '#6366f1', icon: '↱', category: 'action' },
+  { id: 'collect', type: 'collect', label: '收集', color: '#f59e0b', icon: '⭐', category: 'action' },
+  { id: 'repeat', type: 'repeat', label: '重复', color: '#8b5cf6', icon: '🔁', category: 'control' },
+  { id: 'if', type: 'conditional', label: '如果', color: '#f97316', icon: '❓', category: 'condition' },
+];
+
 const BLOCK_CODE_BY_ID: Record<string, string> = {
   move: 'MOVE',
   'turn-left': 'TURN_LEFT',
   'turn-right': 'TURN_RIGHT',
   collect: 'COLLECT',
   repeat: 'REPEAT',
-  if: 'CONDITIONAL'
+  if: 'CONDITIONAL',
 };
 
+const generateId = () =>
+  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
 const createProgramBlock = (blockType: BlockType): ProgramBlock => {
-  const baseConfig: BlockConfig = {};
-  if (blockType.id === 'repeat') {
-    baseConfig.repeatTimes = 2;
+  const config: BlockConfig = {};
+  if (blockType.type === 'repeat') {
+    config.repeatTimes = 2;
   }
-  if (blockType.id === 'if') {
-    baseConfig.conditionType = 'tile-ahead-walkable';
+  if (blockType.type === 'conditional') {
+    config.conditionType = 'tile-ahead-walkable';
   }
-
-  const id =
-    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-      ? crypto.randomUUID()
-      : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
   return {
-    id,
+    id: generateId(),
     blockType,
-    config: baseConfig,
+    config,
     children: blockType.category === 'control' || blockType.category === 'condition' ? [] : undefined,
   };
 };
 
-const cloneBlock = (block: ProgramBlock): ProgramBlock => ({
-  ...block,
-  config: { ...block.config },
-  children: block.children ? block.children.map(cloneBlock) : undefined,
-});
-
-const cloneBlocks = (blocks: ProgramBlock[]): ProgramBlock[] => blocks.map(cloneBlock);
+const cloneBlocks = (blocks: ProgramBlock[]): ProgramBlock[] =>
+  blocks.map((block) => ({
+    ...block,
+    config: { ...block.config },
+    children: block.children ? cloneBlocks(block.children) : undefined,
+  }));
 
 const getBlockAtPath = (blocks: ProgramBlock[], path: BlockPath): ProgramBlock | null => {
-  if (path.length === 0) return null;
-  let currentArray: ProgramBlock[] | undefined = blocks;
   let current: ProgramBlock | undefined;
+  let currentArray: ProgramBlock[] | undefined = blocks;
 
   for (const index of path) {
     if (!currentArray) return null;
@@ -104,101 +103,178 @@ const getBlockAtPath = (blocks: ProgramBlock[], path: BlockPath): ProgramBlock |
   return current ?? null;
 };
 
-const getParentArray = (blocks: ProgramBlock[], parentPath: BlockPath | null): ProgramBlock[] | undefined => {
-  if (!parentPath || parentPath.length === 0) {
-    return blocks;
-  }
-  const parent = getBlockAtPath(blocks, parentPath);
-  if (!parent) return undefined;
-  if (!parent.children) {
-    parent.children = [];
-  }
-  return parent.children;
-};
-
-const removeBlockAtPath = (blocks: ProgramBlock[], path: BlockPath): ProgramBlock | null => {
-  if (path.length === 0) return null;
-  const parentPath = path.slice(0, -1);
-  const index = path[path.length - 1];
-  const parentArray = getParentArray(blocks, parentPath.length > 0 ? parentPath : null);
-  if (!parentArray) return null;
-  const [removed] = parentArray.splice(index, 1);
-  return removed ?? null;
-};
-
-const insertBlockAtPath = (
+const setBlockAtPath = (
   blocks: ProgramBlock[],
-  parentPath: BlockPath | null,
-  index: number,
-  block: ProgramBlock
+  path: BlockPath,
+  updater: (block: ProgramBlock) => void
 ) => {
-  const targetArray = getParentArray(blocks, parentPath);
-  if (!targetArray) return;
-  targetArray.splice(index, 0, block);
+  const block = getBlockAtPath(blocks, path);
+  if (block) {
+    updater(block);
+  }
 };
 
-const pathsEqual = (a: BlockPath | null, b: BlockPath | null) => {
-  if (!a && !b) return true;
-  if (!a || !b) return false;
-  if (a.length !== b.length) return false;
-  return a.every((value, index) => value === b[index]);
+const removeBlockAtPath = (blocks: ProgramBlock[], path: BlockPath): ProgramBlock[] => {
+  if (path.length === 0) return blocks;
+  const clone = cloneBlocks(blocks);
+  const parentPath = path.slice(0, -1);
+  const removeIndex = path[path.length - 1];
+
+  if (parentPath.length === 0) {
+    clone.splice(removeIndex, 1);
+    return clone;
+  }
+
+  const parent = getBlockAtPath(clone, parentPath);
+  if (!parent || !parent.children) return clone;
+  parent.children.splice(removeIndex, 1);
+  return clone;
 };
 
-const normalizeParentPath = (path: BlockPath): BlockPath | null => (path.length === 0 ? null : path);
+const insertBlock = (
+  blocks: ProgramBlock[],
+  blockType: BlockType,
+  target: DragTarget
+): ProgramBlock[] => {
+  const clone = cloneBlocks(blocks);
+  const newBlock = createProgramBlock(blockType);
+  if (!target.path || target.path.length === 0) {
+    const result = [...clone];
+    result.splice(target.index, 0, newBlock);
+    return result;
+  }
+  const parent = getBlockAtPath(clone, target.path);
+  if (!parent) return clone;
+  if (!parent.children) parent.children = [];
+  parent.children.splice(target.index, 0, newBlock);
+  return clone;
+};
 
-export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset, allowedBlocks, onProgramChange }) => {
+const moveBlock = (blocks: ProgramBlock[], from: BlockPath, to: DragTarget): ProgramBlock[] => {
+  const removed = getBlockAtPath(blocks, from);
+  if (!removed) return blocks;
+  let without = removeBlockAtPath(blocks, from);
+  if (from.length === 0) {
+    without = without; // no-op explicit for clarity
+  }
+  const clone = cloneBlocks(without);
+  if (!to.path || to.path.length === 0) {
+    const result = [...clone];
+    result.splice(to.index, 0, removed);
+    return result;
+  }
+  const parent = getBlockAtPath(clone, to.path);
+  if (!parent) return clone;
+  if (!parent.children) parent.children = [];
+  parent.children.splice(to.index, 0, removed);
+  return clone;
+};
+
+const blocksToProgram = (blocks: ProgramBlock[]): Instruction[] =>
+  blocks.map((block) => {
+    switch (block.blockType.type) {
+      case 'move':
+        return { type: 'move' };
+      case 'turn':
+        return {
+          type: 'turn',
+          direction: block.blockType.id === 'turn-left' ? 'left' : 'right',
+        } as Instruction;
+      case 'collect':
+        return { type: 'collect' };
+      case 'repeat':
+        return {
+          type: 'repeat',
+          times: block.config.repeatTimes ?? 2,
+          body: block.children ? blocksToProgram(block.children) : [],
+        } as Instruction;
+      case 'conditional':
+        return {
+          type: 'conditional',
+          condition: { type: block.config.conditionType ?? 'tile-ahead-walkable' },
+          truthy: block.children ? blocksToProgram(block.children) : [],
+          falsy: [],
+        } as Instruction;
+      default:
+        return { type: 'move' };
+    }
+  });
+
+const ChildAdder: React.FC<{
+  available: BlockType[];
+  onAdd: (type: BlockType) => void;
+}> = ({ available, onAdd }) => {
+  const [selected, setSelected] = React.useState<string>(available[0]?.id ?? '');
+
+  React.useEffect(() => {
+    if (!available.find((item) => item.id === selected)) {
+      setSelected(available[0]?.id ?? '');
+    }
+  }, [available, selected]);
+
+  if (available.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="child-adder">
+      <select
+        value={selected}
+        onChange={(event) => setSelected(event.target.value)}
+      >
+        {available.map((type) => (
+          <option key={type.id} value={type.id}>
+            {type.label}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={() => {
+          const blockType = available.find((type) => type.id === selected);
+          if (blockType) {
+            onAdd(blockType);
+          }
+        }}
+      >
+        添加
+      </button>
+    </div>
+  );
+};
+
+export const BlockEditor: React.FC<BlockEditorProps> = ({
+  level,
+  onRun,
+  onReset,
+  allowedBlocks,
+  onProgramChange,
+}) => {
   const [programBlocks, setProgramBlocks] = React.useState<ProgramBlock[]>([]);
-  const [draggedItem, setDraggedItem] = React.useState<DraggedItem | null>(null);
+  const [selectedPath, setSelectedPath] = React.useState<BlockPath | null>(null);
   const [isRunning, setIsRunning] = React.useState(false);
   const [result, setResult] = React.useState<SimulationResult | null>(null);
-  const [selectedPath, setSelectedPath] = React.useState<BlockPath | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
 
   const availableBlockTypes = React.useMemo(() => {
     if (!allowedBlocks || allowedBlocks.length === 0) {
       return BLOCK_TYPES;
     }
     const allowedSet = new Set(allowedBlocks);
-    return BLOCK_TYPES.filter((block) => {
-      const code = BLOCK_CODE_BY_ID[block.id] ?? block.id.toUpperCase();
-      return allowedSet.has(code);
-    });
+    return BLOCK_TYPES.filter((block) => allowedSet.has(BLOCK_CODE_BY_ID[block.id] ?? block.id.toUpperCase()));
   }, [allowedBlocks]);
 
-  const getBlocksByCategory = React.useCallback(
-    (category: BlockType['category']) => availableBlockTypes.filter((block) => block.category === category),
-    [availableBlockTypes]
-  );
-
-  const blocksToProgram = React.useCallback((blocks: ProgramBlock[]): Instruction[] => {
-    return blocks.map((block) => {
-      switch (block.blockType.type) {
-        case 'move':
-          return { type: 'move' };
-        case 'turn':
-          return {
-            type: 'turn',
-            direction: block.blockType.id === 'turn-left' ? 'left' : 'right',
-          } as Instruction;
-        case 'collect':
-          return { type: 'collect' };
-        case 'repeat':
-          return {
-            type: 'repeat',
-            times: block.config.repeatTimes ?? 2,
-            body: block.children ? blocksToProgram(block.children) : [],
-          };
-        case 'conditional':
-          return {
-            type: 'conditional',
-            condition: { type: block.config.conditionType ?? 'tile-ahead-walkable' },
-            truthy: block.children ? blocksToProgram(block.children) : [],
-            falsy: [],
-          };
-        default:
-          return { type: 'move' };
-      }
+  const groupedBlockTypes = React.useMemo(() => {
+    const groups: Record<BlockCategory, BlockType[]> = {
+      action: [],
+      control: [],
+      condition: [],
+    };
+    availableBlockTypes.forEach((block) => {
+      groups[block.category].push(block);
     });
-  }, []);
+    return groups;
+  }, [availableBlockTypes]);
 
   const selectedBlock = React.useMemo(() => {
     if (!selectedPath) return null;
@@ -207,70 +283,80 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset,
 
   React.useEffect(() => {
     onProgramChange?.(blocksToProgram(programBlocks));
-  }, [programBlocks, blocksToProgram, onProgramChange]);
+  }, [programBlocks, onProgramChange]);
 
   React.useEffect(() => {
     setProgramBlocks([]);
-    setResult(null);
     setSelectedPath(null);
+    setResult(null);
+    setError(null);
   }, [level.id]);
 
-  const handleDrop = React.useCallback(
-    (event: React.DragEvent, parentPath: BlockPath | null, index: number) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (!draggedItem) return;
-
-      let nextSelected: BlockPath | null = null;
-
-      setProgramBlocks((previous) => {
-        const draft = cloneBlocks(previous);
-        if (draggedItem.source === 'palette') {
-          const newBlock = createProgramBlock(draggedItem.blockType);
-          insertBlockAtPath(draft, parentPath, index, newBlock);
-          nextSelected = parentPath ? [...parentPath, index] : [index];
-          return draft;
-        }
-
-        const draggedPath = draggedItem.path;
-        const fromParent = normalizeParentPath(draggedPath.slice(0, -1));
-        const removalIndex = draggedPath[draggedPath.length - 1];
-        const sameParent = pathsEqual(fromParent, parentPath);
-        const block = removeBlockAtPath(draft, draggedPath);
-        if (!block) {
-          return draft;
-        }
-
-        let targetIndex = index;
-        if (sameParent && removalIndex < index) {
-          targetIndex = Math.max(0, index - 1);
-        }
-
-        insertBlockAtPath(draft, parentPath, targetIndex, block);
-        nextSelected = parentPath ? [...parentPath, targetIndex] : [targetIndex];
-        return draft;
+  const addBlock = React.useCallback(
+    (blockType: BlockType, parentPath?: BlockPath | null) => {
+      setProgramBlocks((prev) => {
+        const path = parentPath ?? [];
+        const target: DragTarget = {
+          path: path.length > 0 ? path : null,
+          index: path.length > 0 ? getBlockAtPath(prev, path)?.children?.length ?? 0 : prev.length,
+        };
+        return insertBlock(prev, blockType, target);
       });
-
-      setTimeout(() => {
-        if (nextSelected) {
-          setSelectedPath(nextSelected);
-        }
-      }, 0);
-
-      setDraggedItem(null);
+      setError(null);
     },
-    [draggedItem]
+    []
   );
+
+  const updateBlockConfig = (path: BlockPath, config: Partial<BlockConfig>) => {
+    setProgramBlocks((prev) => {
+      const clone = cloneBlocks(prev);
+      setBlockAtPath(clone, path, (block) => {
+        block.config = {
+          ...block.config,
+          ...config,
+        };
+      });
+      return clone;
+    });
+  };
+
+  const handleDeleteBlock = (path: BlockPath) => {
+    setProgramBlocks((prev) => removeBlockAtPath(prev, path));
+    if (selectedPath && path.join(',') === selectedPath.join(',')) {
+      setSelectedPath(null);
+    }
+    setError(null);
+  };
+
+  const handleMove = (path: BlockPath, direction: 'up' | 'down') => {
+    const parentPath = path.slice(0, -1);
+    const index = path[path.length - 1];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+
+    setProgramBlocks((prev) => {
+      const parent = parentPath.length === 0 ? prev : getBlockAtPath(prev, parentPath)?.children ?? [];
+      if (newIndex < 0 || newIndex >= parent.length) {
+        return prev;
+      }
+      const target: DragTarget = {
+        path: parentPath.length > 0 ? parentPath : null,
+        index: newIndex,
+      };
+      return moveBlock(prev, path, target);
+    });
+    setError(null);
+  };
 
   const handleRun = async () => {
     if (isRunning) return;
-    setIsRunning(true);
     try {
+      setIsRunning(true);
+      setError(null);
       const program = blocksToProgram(programBlocks);
-      const simulationResult = await onRun(program);
-      setResult(simulationResult);
-    } catch (error) {
-      console.error('运行程序时出错:', error);
+      const simulation = await onRun(program);
+      setResult(simulation);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '运行失败');
     } finally {
       setIsRunning(false);
     }
@@ -278,575 +364,430 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({ level, onRun, onReset,
 
   const handleReset = () => {
     setProgramBlocks([]);
-    setResult(null);
     setSelectedPath(null);
+    setResult(null);
+    setError(null);
     onReset();
   };
 
-  const handleRemoveBlock = (path: BlockPath) => {
-    setProgramBlocks((previous) => {
-      const draft = cloneBlocks(previous);
-      removeBlockAtPath(draft, path);
-      return draft;
-    });
-    if (selectedPath && pathsEqual(selectedPath, path)) {
-      setSelectedPath(null);
-    }
-  };
-
-  const updateBlockConfig = (path: BlockPath, config: Partial<BlockConfig>) => {
-    setProgramBlocks((previous) => {
-      const draft = cloneBlocks(previous);
-      const block = getBlockAtPath(draft, path);
-      if (block) {
-        block.config = {
-          ...block.config,
-          ...config,
-        };
-      }
-      return draft;
-    });
-  };
-
-  const DropZone = ({ parentPath, index, label }: { parentPath: BlockPath | null; index: number; label?: string }) => (
-    <div
-      className="drop-zone"
-      onDragOver={(event) => {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'move';
-      }}
-      onDrop={(event) => handleDrop(event, parentPath, index)}
-    >
-      <span>{label ?? '拖拽到此'}</span>
-    </div>
-  );
-
-  const renderBlock = (block: ProgramBlock, path: BlockPath, depth: number = 0) => {
-    const parentPath = path.slice(0, -1);
-    const siblingIndex = path[path.length - 1];
-    const parentForChildren = path;
-    const children = block.children ?? [];
-    const isSelected = selectedPath ? pathsEqual(selectedPath, path) : false;
-
-    const shouldRenderLeadingDrop = siblingIndex > 0;
-
-    return (
-      <React.Fragment key={block.id}>
-        {shouldRenderLeadingDrop && (
-          <DropZone
-            parentPath={normalizeParentPath(parentPath)}
-            index={siblingIndex}
-          />
-        )}
-        <div
-          className={`program-block ${isSelected ? 'selected' : ''}`}
-          style={{ backgroundColor: block.blockType.color }}
-          draggable
-          onDragStart={(event) => {
-            event.dataTransfer.effectAllowed = 'move';
-            setDraggedItem({ source: 'program', path });
-          }}
-          onDragEnd={() => setDraggedItem(null)}
-          onClick={(event) => {
-            event.stopPropagation();
-            setSelectedPath(path);
-          }}
-        >
-          <div className="program-block__label">
-            <span className="block-icon">{block.blockType.icon}</span>
-            {block.blockType.label}
-          </div>
-          <button
-            className="delete-btn"
-            onClick={(event) => {
-              event.stopPropagation();
-              handleRemoveBlock(path);
-            }}
-            title="删除积木"
-          >
-            ×
-          </button>
-        </div>
-        {(block.blockType.category === 'control' || block.blockType.category === 'condition') && (
-          <div className="program-block__children">
-            <DropZone
-              parentPath={parentForChildren}
-              index={0}
-              label={children.length === 0 ? '拖到这里添加子积木' : undefined}
-            />
-            {children.map((child, childIndex) => renderBlock(child, [...path, childIndex], depth + 1))}
-            <DropZone parentPath={parentForChildren} index={children.length} />
-          </div>
-        )}
-      </React.Fragment>
-    );
-  };
-
-  const updateBlockConfig = (blockId: string, config: Partial<BlockConfig>) => {
-    setProgramBlocks((prev) =>
-      prev.map((block) =>
-        block.id === blockId
-          ? {
-              ...block,
-              config: {
-                ...block.config,
-                ...config
+  const renderBlocks = (blocks: ProgramBlock[], parentPath: BlockPath = []): React.ReactNode =>
+    blocks.map((block, index) => {
+      const path = [...parentPath, index];
+      const isSelected = selectedPath && path.join(',') === selectedPath.join(',');
+      const canHaveChildren = block.blockType.category === 'control' || block.blockType.category === 'condition';
+      return (
+        <div key={block.id} className={`program-item ${isSelected ? 'selected' : ''}`}>
+          <div
+            role="button"
+            tabIndex={0}
+            className="program-block"
+            style={{ backgroundColor: block.blockType.color }}
+            onClick={() => setSelectedPath(path)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                setSelectedPath(path);
               }
-            }
-          : block
-      )
-    );
-  };
-
-  const selectedBlock = React.useMemo(() => programBlocks.find((block) => block.id === selectedBlockId) ?? null, [programBlocks, selectedBlockId]);
-
-  React.useEffect(() => {
-    if (onProgramChange) {
-      onProgramChange(blocksToProgram(programBlocks));
-    }
-  }, [programBlocks, onProgramChange, blocksToProgram]);
+            }}
+          >
+            <div className="program-block__label">
+              <span className="icon">{block.blockType.icon}</span>
+              <span>{block.blockType.label}</span>
+            </div>
+            <div className="program-block__actions">
+              <button type="button" onClick={() => handleMove(path, 'up')} title="上移">
+                ↑
+              </button>
+              <button type="button" onClick={() => handleMove(path, 'down')} title="下移">
+                ↓
+              </button>
+              <button type="button" onClick={() => handleDeleteBlock(path)} title="删除">
+                ×
+              </button>
+            </div>
+          </div>
+          {canHaveChildren && (
+            <div className="program-children">
+              <div className="child-controls">
+                <span>添加子积木：</span>
+                <ChildAdder
+                  available={availableBlockTypes}
+                  onAdd={(blockType) => addBlock(blockType, path)}
+                />
+              </div>
+              <div className="child-list">{renderBlocks(block.children ?? [], path)}</div>
+            </div>
+          )}
+        </div>
+      );
+    });
 
   return (
     <div className="block-editor">
       <style>{`
         .block-editor {
           display: grid;
-          grid-template-columns: 220px 1fr 300px;
-          min-height: 560px;
-          gap: 16px;
+          grid-template-columns: 260px 1fr 280px;
+          gap: 20px;
+          min-height: 520px;
           font-family: 'Microsoft YaHei', sans-serif;
         }
-
-        .block-palette {
-          background: #f5f5f5;
-          border-radius: 8px;
+        .palette,
+        .program-panel,
+        .inspector {
+          background: #f9fafb;
+          border-radius: 12px;
           padding: 16px;
-          overflow-y: auto;
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
         }
-
-        .block-category {
-          margin-bottom: 16px;
-        }
-
-        .block-category h4 {
-          margin: 0 0 8px 0;
-          color: #333;
-          font-size: 14px;
-        }
-
-        .palette-block {
-          display: flex;
-          align-items: center;
-          padding: 8px 12px;
-          margin: 4px 0;
-          border-radius: 6px;
-          cursor: grab;
-          user-select: none;
-          transition: transform 0.2s;
-          color: white;
-          font-weight: 500;
-        }
-
-        .palette-block:hover {
-          transform: scale(1.05);
-        }
-
-        .palette-block:active {
-          cursor: grabbing;
-        }
-
-        .block-icon {
-          margin-right: 8px;
-          font-size: 16px;
-        }
-
-        .program-area {
-          background: #fff;
-          border: 2px dashed #ddd;
-          border-radius: 8px;
-          padding: 16px;
-          overflow-y: auto;
-          min-height: 520px;
+        .palette {
           display: flex;
           flex-direction: column;
+          gap: 16px;
         }
-
-        .program-empty {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: #9ca3af;
+        .palette h4 {
+          margin: 0;
           font-size: 16px;
+          color: #111827;
         }
-
-        .drop-zone {
-          border: 2px dashed transparent;
-          border-radius: 6px;
-          padding: 8px;
-          margin: 4px 0;
-          text-align: center;
-          color: #9ca3af;
-          font-size: 13px;
-          background: rgba(148, 163, 184, 0.08);
-          transition: all 0.2s ease;
+        .palette-group {
+          display: grid;
+          gap: 8px;
         }
-
-        .drop-zone:hover,
-        .drop-zone:focus-within {
-          border-color: #4CAF50;
-          color: #4CAF50;
-          background: rgba(76, 175, 80, 0.08);
-        }
-
-        .program-block {
-          border-radius: 6px;
-          color: white;
-          font-weight: 500;
+        .palette-button {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 8px 12px;
-          margin: 4px 0;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-          cursor: move;
-          user-select: none;
-          transition: transform 0.2s, border-color 0.2s;
-          border: 2px solid transparent;
+          border-radius: 10px;
+          border: none;
+          padding: 10px 12px;
+          cursor: pointer;
+          color: #0f172a;
+          font-weight: 500;
+          background: white;
+          box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
-
-        .program-block.selected {
-          border-color: #fde68a;
-          transform: scale(1.02);
+        .palette-button:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 10px rgba(148, 163, 184, 0.25);
         }
-
-        .program-block__children {
-          margin-left: 18px;
-          border-left: 2px dashed rgba(148, 163, 184, 0.5);
-          padding-left: 12px;
-          margin-bottom: 8px;
-        }
-
-        .program-block__label {
+        .palette-icon {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
+          justify-content: center;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          margin-right: 8px;
+          font-size: 16px;
         }
-
-        .delete-btn {
-          margin-left: 8px;
-          background: rgba(255,255,255,0.3);
-          border: none;
-          border-radius: 4px;
-          color: white;
-          cursor: pointer;
-          padding: 2px 6px;
-          font-size: 12px;
+        .program-panel {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
         }
-
-        .control-panel {
-          background: #f9f9f9;
-          border-radius: 8px;
-          padding: 16px;
+        .program-list {
           display: flex;
           flex-direction: column;
           gap: 12px;
         }
-
-        .inspector {
-          background: #eef2ff;
+        .program-item {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .program-item.selected .program-block {
+          outline: 3px solid rgba(14, 165, 233, 0.4);
+        }
+        .program-block {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-radius: 10px;
+          padding: 10px 12px;
+          color: white;
+          cursor: pointer;
+          box-shadow: 0 6px 12px rgba(15, 23, 42, 0.15);
+        }
+        .program-block__label {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-weight: 600;
+        }
+        .program-block__actions {
+          display: flex;
+          gap: 6px;
+        }
+        .program-block__actions button {
+          border: none;
           border-radius: 6px;
-          padding: 12px;
+          padding: 4px 6px;
+          cursor: pointer;
+          background: rgba(255, 255, 255, 0.3);
+          color: white;
+        }
+        .program-children {
+          margin-left: 20px;
+          padding-left: 16px;
+          border-left: 2px dashed rgba(99, 102, 241, 0.3);
           display: grid;
           gap: 12px;
         }
-
+        .child-controls {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13px;
+          color: #475569;
+        }
+        .child-adder {
+          display: inline-flex;
+          gap: 6px;
+          align-items: center;
+        }
+        .child-adder select {
+          padding: 4px 6px;
+          border-radius: 6px;
+          border: 1px solid #cbd5f5;
+          background: white;
+          font-size: 13px;
+        }
+        .child-adder button {
+          border: none;
+          border-radius: 6px;
+          padding: 4px 8px;
+          background: #2563eb;
+          color: white;
+          cursor: pointer;
+        }
+        .inspector {
+          display: grid;
+          gap: 16px;
+        }
         .inspector h4 {
           margin: 0;
-          color: #4338ca;
-          font-size: 14px;
+          font-size: 16px;
+          color: #111827;
         }
-
+        .inspector section {
+          background: white;
+          border-radius: 10px;
+          padding: 12px;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+          display: grid;
+          gap: 12px;
+        }
         .inspector label {
-          font-size: 13px;
-          color: #1f2937;
           display: grid;
           gap: 4px;
+          font-size: 13px;
+          color: #374151;
         }
-
         .inspector input,
         .inspector select {
           padding: 6px 8px;
-          border-radius: 4px;
-          border: 1px solid #c7d2fe;
-          font-size: 13px;
-          background: white;
-        }
-
-        .goal-section {
-          background: #e3f2fd;
           border-radius: 6px;
+          border: 1px solid rgba(148, 163, 184, 0.4);
+          background: #f8fafc;
+        }
+        .inspector button {
+          border-radius: 8px;
+          border: none;
+          padding: 10px 14px;
+          font-weight: 600;
+          cursor: pointer;
+          color: white;
+        }
+        .inspector .primary {
+          background: #22c55e;
+        }
+        .inspector .secondary {
+          background: #ef4444;
+        }
+        .result-card {
+          background: white;
+          border-radius: 10px;
           padding: 12px;
-        }
-
-        .goal-section h4 {
-          margin: 0 0 8px 0;
-          color: #1976d2;
-        }
-
-        .controls {
-          display: flex;
-          flex-direction: column;
+          border: 1px solid rgba(148, 163, 184, 0.3);
+          display: grid;
           gap: 8px;
         }
-
-        .btn {
-          padding: 10px 16px;
-          border: none;
-          border-radius: 6px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: background-color 0.2s;
-        }
-
-        .btn-primary {
-          background: #4CAF50;
-          color: white;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-          background: #45a049;
-        }
-
-        .btn-secondary {
-          background: #f44336;
-          color: white;
-        }
-
-        .btn-secondary:hover {
-          background: #da190b;
-        }
-
-        .btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .result-panel {
-          margin-top: 16px;
-          padding: 12px;
-          border-radius: 6px;
-        }
-
-        .result-success {
-          background: #c8e6c9;
-          color: #2e7d32;
-        }
-
-        .result-error {
-          background: #ffcdd2;
-          color: #c62828;
+        .error {
+          color: #b91c1c;
+          font-size: 13px;
         }
       `}</style>
 
-      <div className="block-palette">
-        <div className="block-category">
-          <h4>🎯 动作积木</h4>
-          {getBlocksByCategory('action').map((blockType) => (
+      <aside className="palette">
+        <div>
+          <h4>动作积木</h4>
+          <div className="palette-group">
+            {groupedBlockTypes.action.map((block) => (
+              <button
+                key={block.id}
+                type="button"
+                className="palette-button"
+                onClick={() => addBlock(block)}
+              >
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  <span className="palette-icon" style={{ background: `${block.color}20` }}>
+                    {block.icon}
+                  </span>
+                  {block.label}
+                </span>
+                <span>添加</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <h4>控制积木</h4>
+          <div className="palette-group">
+            {groupedBlockTypes.control.map((block) => (
+              <button
+                key={block.id}
+                type="button"
+                className="palette-button"
+                onClick={() => addBlock(block)}
+              >
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  <span className="palette-icon" style={{ background: `${block.color}20` }}>
+                    {block.icon}
+                  </span>
+                  {block.label}
+                </span>
+                <span>添加</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <h4>条件积木</h4>
+          <div className="palette-group">
+            {groupedBlockTypes.condition.map((block) => (
+              <button
+                key={block.id}
+                type="button"
+                className="palette-button"
+                onClick={() => addBlock(block)}
+              >
+                <span style={{ display: 'flex', alignItems: 'center' }}>
+                  <span className="palette-icon" style={{ background: `${block.color}20` }}>
+                    {block.icon}
+                  </span>
+                  {block.label}
+                </span>
+                <span>添加</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </aside>
+
+      <section className="program-panel">
+        <header>
+          <h3 style={{ margin: '0 0 8px', color: '#0f172a' }}>程序区</h3>
+          <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
+            点击积木可设置参数，使用控制类积木为程序增加结构。
+          </p>
+        </header>
+        <div className="program-list">
+          {programBlocks.length === 0 ? (
             <div
-              key={blockType.id}
-              className="palette-block"
-              style={{ backgroundColor: blockType.color }}
-              draggable
-              onDragStart={() => setDraggedItem({ source: 'palette', blockType })}
-              onDragEnd={() => setDraggedItem(null)}
+              style={{
+                border: '2px dashed rgba(148, 163, 184, 0.4)',
+                borderRadius: '12px',
+                padding: '24px',
+                textAlign: 'center',
+                color: '#64748b',
+              }}
             >
-              <span className="block-icon">{blockType.icon}</span>
-              {blockType.label}
+              从左侧选择积木开始搭建程序。
             </div>
-          ))}
-        </div>
-
-        <div className="block-category">
-          <h4>🔄 控制积木</h4>
-          {getBlocksByCategory('control').map((blockType) => (
-            <div
-              key={blockType.id}
-              className="palette-block"
-              style={{ backgroundColor: blockType.color }}
-              draggable
-              onDragStart={() => setDraggedItem({ source: 'palette', blockType })}
-              onDragEnd={() => setDraggedItem(null)}
-            >
-              <span className="block-icon">{blockType.icon}</span>
-              {blockType.label}
-            </div>
-          ))}
-        </div>
-
-        <div className="block-category">
-          <h4>🧠 条件积木</h4>
-          {getBlocksByCategory('condition').map((blockType) => (
-            <div
-              key={blockType.id}
-              className="palette-block"
-              style={{ backgroundColor: blockType.color }}
-              draggable
-              onDragStart={() => setDraggedItem({ source: 'palette', blockType })}
-              onDragEnd={() => setDraggedItem(null)}
-            >
-              <span className="block-icon">{blockType.icon}</span>
-              {blockType.label}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="program-area" onClick={() => setSelectedPath(null)}>
-        {programBlocks.length === 0 ? (
-          <div className="program-empty">从左侧拖入积木开始编程</div>
-        ) : (
-          <>
-            <DropZone parentPath={null} index={0} label="拖到这里开始程序" />
-            {programBlocks.map((block, index) => renderBlock(block, [index]))}
-            <DropZone parentPath={null} index={programBlocks.length} label="拖到这里添加到末尾" />
-          </>
-        )}
-      </div>
-
-      <div className="control-panel">
-        <div className="goal-section">
-          <h4>🎯 目标</h4>
-          <p style={{ margin: 0 }}>{level.name}</p>
-          <p style={{ margin: '4px 0 0 0' }}>最佳步数: {level.bestSteps}</p>
-        </div>
-
-        <div className="inspector">
-          <h4>🛠️ 积木设置</h4>
-          {selectedBlock && selectedPath ? (
-            <>
-              <div style={{ fontSize: '13px', color: '#6b7280' }}>
-                当前选择：{selectedBlock.blockType.label}
-              </div>
-              {selectedBlock.blockType.id === 'repeat' && (
-                <label>
-                  重复次数
-                  <input
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={selectedBlock.config.repeatTimes ?? 2}
-                    onChange={(event) =>
-                      updateBlockConfig(selectedPath, { repeatTimes: Number(event.target.value) })
-                    }
-                  />
-                </label>
-              )}
-              {selectedBlock.blockType.id === 'if' && (
-                <label>
-                  判断条件
-                  <select
-                    value={selectedBlock.config.conditionType ?? 'tile-ahead-walkable'}
-                    onChange={(event) =>
-                      updateBlockConfig(selectedPath, { conditionType: event.target.value as Engine.Condition['type'] })
-                    }
-                  >
-                    <option value="tile-ahead-walkable">前方可通行</option>
-                    <option value="collectibles-remaining">关卡仍有宝石</option>
-                    <option value="goal-reached">是否已到达终点</option>
-                  </select>
-                </label>
-              )}
-              {selectedBlock.blockType.id !== 'repeat' && selectedBlock.blockType.id !== 'if' && (
-                <div style={{ fontSize: '13px', color: '#9ca3af' }}>此积木无需额外设置。</div>
-              )}
-            </>
           ) : (
-            <div style={{ fontSize: '13px', color: '#94a3b8' }}>选择程序区中的积木以调整参数。</div>
+            renderBlocks(programBlocks)
           )}
         </div>
+      </section>
 
-        <div className="inspector">
-          <h4>🛠️ 积木设置</h4>
-          {selectedBlock ? (
-            <>
-              <div style={{ fontSize: '13px', color: '#6b7280' }}>
-                当前选择：{selectedBlock.blockType.label}
-              </div>
-              {selectedBlock.blockType.id === 'repeat' && (
-                <label>
-                  重复次数
-                  <input
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={selectedBlock.config.repeatTimes ?? 2}
-                    onChange={(event) => updateBlockConfig(selectedBlock.id, { repeatTimes: Number(event.target.value) })}
-                  />
-                </label>
-              )}
-              {selectedBlock.blockType.id === 'if' && (
-                <label>
-                  判断条件
-                  <select
-                    value={selectedBlock.config.conditionType ?? 'tile-ahead-walkable'}
-                    onChange={(event) => updateBlockConfig(selectedBlock.id, { conditionType: event.target.value as Engine.Condition['type'] })}
-                  >
-                    <option value="tile-ahead-walkable">前方可通行</option>
-                    <option value="collectibles-remaining">关卡仍有宝石</option>
-                  </select>
-                </label>
-              )}
-              {(selectedBlock.blockType.id !== 'repeat' && selectedBlock.blockType.id !== 'if') && (
-                <div style={{ fontSize: '13px', color: '#9ca3af' }}>
-                  此积木无需额外设置。
-                </div>
-              )}
-            </>
-          ) : (
-            <div style={{ fontSize: '13px', color: '#94a3b8' }}>
-              选择程序区中的积木以调整参数。
-            </div>
-          )}
-        </div>
-
-        <div className="controls">
+      <aside className="inspector">
+        <section>
+          <h4>运行控制</h4>
           <button
-            className="btn btn-primary"
-            onClick={handleRun}
+            type="button"
+            className="primary"
             disabled={isRunning || programBlocks.length === 0}
+            onClick={handleRun}
           >
-            {isRunning ? '运行中...' : '▶️ 运行程序'}
+            🚀 运行程序
           </button>
-
-          <button className="btn btn-secondary" onClick={handleReset}>
+          <button type="button" className="secondary" onClick={handleReset}>
             🔄 重置
           </button>
-        </div>
+          {error && <div className="error">{error}</div>}
+        </section>
+
+        {selectedBlock ? (
+          <section>
+            <h4>积木设置</h4>
+            <div>
+              <strong>{selectedBlock.blockType.label}</strong>
+            </div>
+            {selectedBlock.blockType.type === 'repeat' && (
+              <label>
+                重复次数
+                <input
+                  type="number"
+                  min={1}
+                  value={selectedBlock.config.repeatTimes ?? 2}
+                  onChange={(event) =>
+                    updateBlockConfig(selectedPath ?? [], {
+                      repeatTimes: Math.max(1, Number(event.target.value)),
+                    })
+                  }
+                />
+              </label>
+            )}
+            {selectedBlock.blockType.type === 'conditional' && (
+              <label>
+                条件类型
+                <select
+                  value={selectedBlock.config.conditionType ?? 'tile-ahead-walkable'}
+                  onChange={(event) =>
+                    updateBlockConfig(selectedPath ?? [], {
+                      conditionType: event.target.value as Engine.Condition['type'],
+                    })
+                  }
+                >
+                  <option value="tile-ahead-walkable">前方可行走</option>
+                  <option value="collectibles-remaining">是否还有宝石</option>
+                </select>
+              </label>
+            )}
+          </section>
+        ) : (
+          <section>
+            <h4>技巧提示</h4>
+            <ul style={{ margin: 0, paddingLeft: '20px', color: '#4b5563', fontSize: '13px' }}>
+              <li>选择积木后可以调整其设置。</li>
+              <li>控制与条件积木可以容纳子积木，构建更复杂的逻辑。</li>
+              <li>建议先构思目标路径，再逐步搭建程序。</li>
+            </ul>
+          </section>
+        )}
 
         {result && (
-          <div className={`result-panel ${result.success ? 'result-success' : 'result-error'}`}>
-            {result.success ? (
-              <>
-                <h4 style={{ margin: '0 0 8px 0' }}>🎉 成功通关！</h4>
-                <p style={{ margin: 0 }}>步数: {result.steps}</p>
-                <p style={{ margin: 0 }}>星级: {'⭐'.repeat(result.stars)}</p>
-                {result.metadata?.bestSteps && (
-                  <p style={{ margin: 0 }}>与最佳方案差距: {result.steps - result.metadata.bestSteps} 步</p>
-                )}
-              </>
-            ) : (
-              <>
-                <h4 style={{ margin: '0 0 8px 0' }}>💡 再试试吧</h4>
-                <p style={{ margin: 0 }}>错误: {result.errorCode}</p>
-                <p style={{ margin: 0 }}>已执行步数: {result.steps}</p>
-              </>
-            )}
-          </div>
+          <section className="result-card">
+            <h4>最近一次运行</h4>
+            <div>结果：{result.success ? '成功 ✅' : '失败 ❌'}</div>
+            <div>步数：{result.steps}</div>
+            <div>星级：{'⭐'.repeat(result.stars)}</div>
+            {!result.success && result.errorCode && <div>错误代码：{result.errorCode}</div>}
+          </section>
         )}
-      </div>
+      </aside>
     </div>
   );
 };
 
-export default BlockEditor;
