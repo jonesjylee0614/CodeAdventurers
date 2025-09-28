@@ -10,6 +10,7 @@ require (
 	github.com/go-playground/validator/v10 v10.21.0
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/hibiken/asynq v0.25.1
+	github.com/joho/godotenv v1.5.1
 	github.com/prometheus/client_golang v1.18.0
 	github.com/redis/go-redis/v9 v9.14.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.51.0
