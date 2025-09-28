@@ -1,0 +1,233 @@
+openapi: 3.1.0
+info:
+  title: Code Adventurers API
+  version: 1.0.0
+  description: |
+    OpenAPI specification for the Go backend. This contract intentionally mirrors the existing
+    REST and WebSocket interfaces to guarantee backward compatibility with the current frontend.
+servers:
+  - url: https://api.example.com
+    description: Production server
+  - url: https://staging-api.example.com
+    description: Staging server
+paths:
+  /api/auth/guest:
+    post:
+      summary: Issue a guest access token
+      operationId: postAuthGuest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuestAuthRequest'
+      responses:
+        '200':
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /api/auth/class:
+    post:
+      summary: Join a class using the invitation code
+      operationId: postAuthClass
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassAuthRequest'
+      responses:
+        '200':
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+  /api/student/map:
+    get:
+      summary: Retrieve the learning map for the current student
+      operationId: getStudentMap
+      responses:
+        '200':
+          description: Student map fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentMapResponse'
+  /api/student/levels/{id}/prep:
+    get:
+      summary: Fetch preparation data for the specified level
+      operationId: getStudentLevelPrep
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Level preparation fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelPrepResponse'
+  /api/student/levels/{id}/run:
+    post:
+      summary: Execute a level either synchronously or via the async queue
+      operationId: postStudentLevelRun
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LevelRunRequest'
+      responses:
+        '200':
+          description: Level executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LevelRunResponse'
+  /api/student/levels/{id}/complete:
+    post:
+      summary: Mark a level as completed by the current student
+      operationId: postStudentLevelComplete
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LevelCompleteRequest'
+      responses:
+        '200':
+          description: Level completion stored successfully
+  /api/student/levels/{id}/sandbox:
+    post:
+      summary: Run sandbox code for a level without affecting progress
+      operationId: postStudentLevelSandbox
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SandboxRunRequest'
+      responses:
+        '200':
+          description: Sandbox executed successfully
+  /api/teacher/analytics/{resource}:
+    get:
+      summary: Retrieve analytics for teachers
+      operationId: getTeacherAnalytics
+      parameters:
+        - in: path
+          name: resource
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Analytics data fetched successfully
+components:
+  schemas:
+    GuestAuthRequest:
+      type: object
+      required:
+        - locale
+      properties:
+        locale:
+          type: string
+    ClassAuthRequest:
+      type: object
+      required:
+        - classCode
+      properties:
+        classCode:
+          type: string
+    AuthResponse:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+        expiresIn:
+          type: integer
+          format: int64
+    StudentMapResponse:
+      type: object
+      properties:
+        levels:
+          type: array
+          items:
+            $ref: '#/components/schemas/LevelSummary'
+    LevelSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+    LevelPrepResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        starterCode:
+          type: string
+        hints:
+          type: array
+          items:
+            type: string
+    LevelRunRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        language:
+          type: string
+    LevelRunResponse:
+      type: object
+      properties:
+        taskId:
+          type: string
+        status:
+          type: string
+        output:
+          type: string
+    LevelCompleteRequest:
+      type: object
+      properties:
+        score:
+          type: number
+        completedAt:
+          type: string
+          format: date-time
+    SandboxRunRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        language:
+          type: string

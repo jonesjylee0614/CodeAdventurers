@@ -1,5 +1,5 @@
 -- MySQL schema for Code Adventurers platform (v2.0)
--- This script matches the JSON-first persistence model used by services/api.
+-- This script matches the domain model consumed by backend.
 
 DROP DATABASE IF EXISTS code_adventurers;
 CREATE DATABASE code_adventurers CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
