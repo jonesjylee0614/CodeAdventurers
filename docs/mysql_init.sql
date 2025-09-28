@@ -1,4 +1,4 @@
--- Initial dataset mirroring services/api/src/seed.ts
+-- Initial dataset aligned with backend domain defaults
 USE code_adventurers;
 
 INSERT INTO users (id, data) VALUES

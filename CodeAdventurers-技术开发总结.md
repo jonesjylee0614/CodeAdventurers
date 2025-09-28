@@ -18,16 +18,20 @@ CodeAdventurers（编程冒险家）是一个创新的编程教育平台，通�
 ### 项目结构
 ```
 CodeAdventurers/
-├── apps/                    # 前端应用
-│   ├── student/            # 学生端
-│   └── teacher/            # 教师端
-├── packages/               # 共享包
-│   └── engine/            # 游戏引擎
-├── services/              # 后端服务
-│   └── api/              # API服务
-├── tests/                # 测试文件
-├── docs/                 # 文档
-└── scripts/              # 脚本
+├── backend/                 # Go API 服务（Gin + sqlc + asynq）
+│   ├── cmd/api/main.go      # 入口，初始化配置与依赖
+│   ├── internal/            # HTTP Handler、Service、Repo、WS、Jobs、Platform
+│   ├── migrations/          # 数据库迁移脚本
+│   └── api/openapi.yaml     # OpenAPI 3 契约
+├── frontend/                # React/TypeScript 前端工程
+│   ├── apps/                # 学生、教师、家长、管理端应用
+│   ├── packages/            # 共享引擎与 UI 包
+│   ├── scripts/             # 开发脚本
+│   ├── tests/               # Jest/RTL 测试
+│   └── tsconfig.json        # TypeScript 配置入口
+├── docs/                    # 架构、设计与运维文档
+├── levels/                  # 示例关卡数据
+└── CodeAdventurers-技术开发总结.md  # 总览文档
 ```
 
 ### 技术栈
@@ -39,21 +43,24 @@ CodeAdventurers/
 - **Canvas API** - 游戏场景渲染
 
 #### 后端技术
-- **Node.js** - 运行时环境
-- **Express.js** - Web框架
-- **TypeScript** - 服务端类型安全
-- **MySQL** - 数据持久化
-- **JSON存储** - 灵活的数据模型
+- **Go 1.23** - 单体服务主语言
+- **Gin** - REST 路由与中间件框架
+- **nhooyr.io/websocket** - WebSocket 通道
+- **sqlc + MySQL 8** - 类型安全的数据访问与存储
+- **Redis 7 + asynq** - 缓存与异步任务队列
+- **OpenTelemetry + Prometheus** - 指标与追踪
+- **go-playground/validator** - DTO 校验
 
 #### 开发工具
-- **pnpm** - 包管理器
-- **Jest** - 测试框架
-- **ESM模块** - 现代模块系统
-- **ts-node** - TypeScript直接执行
+- **pnpm / npm** - 前端包管理器（位于 `frontend/`）
+- **Jest + Testing Library** - React 组件测试
+- **sqlc / golang-migrate** - 数据库代码生成与迁移
+- **Docker + distroless** - 构建与部署容器镜像
+- **OpenTelemetry Collector** - 指标采集链路
 
 ## 🔧 核心功能实现
 
-### 1. 游戏引擎 (`packages/engine`)
+### 1. 游戏引擎 (`frontend/packages/engine`)
 
 **核心类：`LevelSimulator`**
 ```typescript
@@ -76,9 +83,24 @@ export class LevelSimulator {
 - 错误检测：碰撞、步数限制、目标未达成
 - 星级评分：基于步数效率的评分系统
 
-### 2. API服务 (`services/api`)
+### 2. API 服务（`backend`）
 
-**完整的RESTful API**，包含以下主要端点：
+**全新的 Go 单体服务** 负责 REST 与 WebSocket 接口，在保持现有 URL 与 JSON 契约不变的前提下，实现模块化的目录结构：
+
+```
+backend/
+├── cmd/api/main.go          # 入口，加载配置、初始化依赖
+├── internal/http            # Gin 路由、Handler、DTO、校验
+├── internal/service         # 领域服务：鉴权、学生、教师、健康检查
+├── internal/repo            # 持久化占位目录（后续由 sqlc 生成）
+├── internal/ws              # WebSocket 连接管理
+├── internal/jobs            # asynq 队列封装
+└── internal/platform        # 配置、日志、追踪、限流、存储等基础设施
+```
+
+**同步/异步运行策略**：轻载请求同步返回，重载请求通过 `asynq` 入队并使用 `/api/student/run/stream` 推送进度；缓存与数据库连接在 `internal/platform` 中集中管理，支持 MySQL + Redis。
+
+**接口兼容性**（与旧 Node 版本保持一致）：
 
 #### 认证系统
 - `POST /api/auth/guest` - 游客登录
@@ -93,15 +115,13 @@ export class LevelSimulator {
 - `POST /api/student/sandbox` - 沙盒创作
 
 #### 教师端API
-- `POST /api/teacher/courses` - 创建课程
-- `POST /api/teacher/levels/:id` - 编辑关卡
 - `GET /api/teacher/analytics/*` - 学习分析
 
-#### 数据存储
-采用 **JSON-First** 设计模式：
-- 内存存储：开发和测试
-- MySQL存储：生产环境
-- 统一的数据访问接口
+#### 数据存储与观测
+- MySQL 8（`migrations/` 目录将托管变更脚本）
+- Redis 7：缓存与 asynq 队列
+- OpenTelemetry → Prometheus 指标暴露在 `/metrics`
+- `zap` JSON 日志 + `/healthz`、`/readyz` 探针
 
 ### 3. 前端组件系统
 
@@ -145,6 +165,8 @@ export class LevelSimulator {
 
 ## 🔄 开发过程中的技术挑战与解决方案
 
+> 以下条目记录了历史 Node.js 实现阶段的排查经验，作为 Go 版本迁移的补充背景，仍保留以便追溯。
+
 ### 1. ESM模块导入问题
 
 **问题**：在Node.js ESM模式下，TypeScript路径映射和命名导入出现兼容性问题。
@@ -155,7 +177,7 @@ export class LevelSimulator {
 import { LevelDefinition } from '@engine/index';
 
 // 解决方案
-import * as Engine from '../../../packages/engine/src/index.ts';
+import * as Engine from '../../../frontend/packages/engine/src/index.ts';
 type LevelDefinition = Engine.LevelDefinition;
 ```
 
@@ -334,7 +356,7 @@ interface StudentProgressRecord {
 ## 📚 技术文档
 
 ### API文档
-完整的API文档位于 `services/api/src/index.ts`，包含：
+完整的 API 契约维护在 `backend/api/openapi.yaml`，包含：
 - 所有端点的详细说明
 - 请求/响应格式
 - 错误代码定义
