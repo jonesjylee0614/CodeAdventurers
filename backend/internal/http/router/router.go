@@ -56,15 +56,24 @@ func registerRoutes(engine *gin.Engine, deps Dependencies) {
 		{
 			auth.POST("/guest", deps.Auth.Guest)
 			auth.POST("/class", deps.Auth.Class)
+			auth.POST("/login", deps.Auth.Login)
 		}
 
 		student := api.Group("/student")
 		{
+			student.GET("/profile", deps.Student.Profile)
 			student.GET("/map", deps.Student.Map)
+			student.GET("/levels/:id", deps.Student.Level)
 			student.GET("/levels/:id/prep", deps.Student.Prep)
 			student.POST("/levels/:id/run", deps.Student.Run)
 			student.POST("/levels/:id/complete", deps.Student.Complete)
 			student.POST("/levels/:id/sandbox", deps.Student.Sandbox)
+			student.POST("/hints/:id", deps.Student.Hint)
+			student.GET("/settings", deps.Student.Settings)
+			student.PUT("/settings", deps.Student.UpdateSettings)
+			student.POST("/settings/reset-progress", deps.Student.ResetProgress)
+			student.GET("/avatar", deps.Student.Avatar)
+			student.PUT("/avatar", deps.Student.UpdateAvatar)
 		}
 
 		teacher := api.Group("/teacher")
@@ -79,8 +88,8 @@ func registerRoutes(engine *gin.Engine, deps Dependencies) {
 func configureCORS(cfg config.Config) gin.HandlerFunc {
 	corsConfig := cors.Config{
 		AllowCredentials: true,
-		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodOptions},
-		AllowHeaders:     []string{"Authorization", "Content-Type", "Idempotency-Key", "X-Requested-With"},
+		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodOptions},
+		AllowHeaders:     []string{"Authorization", "Content-Type", "Idempotency-Key", "X-Requested-With", "X-User-Id", "x-user-id"},
 		MaxAge:           12 * time.Hour,
 	}
 	if len(cfg.CORSOrigins) == 0 {

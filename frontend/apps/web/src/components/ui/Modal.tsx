@@ -47,18 +47,20 @@ export const Modal = ({
           </button>
         </header>
         <div className="ui-modal__body">{children}</div>
-        <footer className="ui-modal__footer">
-          {secondaryAction ? (
-            <Button variant="ghost" onClick={secondaryAction.onClick} disabled={secondaryAction.disabled}>
-              {secondaryAction.label}
-            </Button>
-          ) : null}
-          {primaryAction ? (
-            <Button onClick={primaryAction.onClick} disabled={primaryAction.disabled}>
-              {primaryAction.label}
-            </Button>
-          ) : null}
-        </footer>
+        {(primaryAction || secondaryAction) && (
+          <footer className="ui-modal__footer">
+            {secondaryAction ? (
+              <Button variant="ghost" onClick={secondaryAction.onClick} disabled={secondaryAction.disabled}>
+                {secondaryAction.label}
+              </Button>
+            ) : null}
+            {primaryAction ? (
+              <Button onClick={primaryAction.onClick} disabled={primaryAction.disabled}>
+                {primaryAction.label}
+              </Button>
+            ) : null}
+          </footer>
+        )}
       </div>
     </div>
   );

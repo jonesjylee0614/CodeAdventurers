@@ -45,6 +45,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
+  /api/auth/login:
+    post:
+      summary: Authenticate with credentials for teacher/parent roles
+      operationId: postAuthLogin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CredentialAuthRequest'
+      responses:
+        '200':
+          description: Authenticated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CredentialAuthResponse'
+  /api/student/profile:
+    get:
+      summary: Retrieve the profile for the authenticated student
+      operationId: getStudentProfile
+      responses:
+        '200':
+          description: Student profile returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentProfile'
   /api/student/map:
     get:
       summary: Retrieve the learning map for the current student
@@ -56,6 +84,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StudentMapResponse'
+  /api/student/levels/{id}:
+    get:
+      summary: Fetch the detail for a specific level including progress
+      operationId: getStudentLevel
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Level detail returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentLevelDetail'
   /api/student/levels/{id}/prep:
     get:
       summary: Fetch preparation data for the specified level
@@ -75,7 +120,7 @@ paths:
                 $ref: '#/components/schemas/LevelPrepResponse'
   /api/student/levels/{id}/run:
     post:
-      summary: Execute a level either synchronously or via the async queue
+      summary: Execute a level and return the simulation outcome
       operationId: postStudentLevelRun
       parameters:
         - in: path
@@ -88,14 +133,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LevelRunRequest'
+              $ref: '#/components/schemas/StudentRunRequest'
       responses:
         '200':
           description: Level executed successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LevelRunResponse'
+                $ref: '#/components/schemas/SimulationResult'
   /api/student/levels/{id}/complete:
     post:
       summary: Mark a level as completed by the current student
@@ -111,10 +156,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LevelCompleteRequest'
+              $ref: '#/components/schemas/StudentCompleteRequest'
       responses:
         '200':
           description: Level completion stored successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
   /api/student/levels/{id}/sandbox:
     post:
       summary: Run sandbox code for a level without affecting progress
@@ -130,10 +179,102 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SandboxRunRequest'
+              $ref: '#/components/schemas/StudentRunRequest'
       responses:
         '200':
           description: Sandbox executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimulationResult'
+  /api/student/hints/{id}:
+    post:
+      summary: Request a contextual hint for the given level
+      operationId: postStudentHint
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentHintRequest'
+      responses:
+        '200':
+          description: Hint generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HintResponse'
+  /api/student/settings:
+    get:
+      summary: Retrieve persisted student preferences
+      operationId: getStudentSettings
+      responses:
+        '200':
+          description: Student settings returned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentSettings'
+    put:
+      summary: Update student preferences
+      operationId: putStudentSettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentSettingsUpdate'
+      responses:
+        '200':
+          description: Student settings updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentSettings'
+  /api/student/settings/reset-progress:
+    post:
+      summary: Reset all stored progress for the current student
+      operationId: postStudentResetProgress
+      responses:
+        '200':
+          description: Progress reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatusResponse'
+  /api/student/avatar:
+    get:
+      summary: Retrieve the avatar state for the student
+      operationId: getStudentAvatar
+      responses:
+        '200':
+          description: Avatar state returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarState'
+    put:
+      summary: Equip a new avatar for the student
+      operationId: putStudentAvatar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentAvatarUpdate'
+      responses:
+        '200':
+          description: Avatar updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarState'
   /api/teacher/analytics/{resource}:
     get:
       summary: Retrieve analytics for teachers
@@ -151,36 +292,182 @@ components:
   schemas:
     GuestAuthRequest:
       type: object
-      required:
-        - locale
       properties:
+        name:
+          type: string
         locale:
           type: string
     ClassAuthRequest:
       type: object
       required:
-        - classCode
+        - inviteCode
+        - name
       properties:
-        classCode:
+        inviteCode:
           type: string
+        name:
+          type: string
+    CredentialAuthRequest:
+      type: object
+      required:
+        - identifier
+        - password
+        - role
+      properties:
+        identifier:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [teacher, parent, admin, student]
     AuthResponse:
       type: object
       required:
-        - token
+        - userId
+        - name
+        - role
       properties:
-        token:
+        userId:
           type: string
-        expiresIn:
-          type: integer
-          format: int64
-    StudentMapResponse:
+        name:
+          type: string
+        role:
+          type: string
+        classId:
+          type: string
+        childIds:
+          type: array
+          items:
+            type: string
+        managedClassIds:
+          type: array
+          items:
+            type: string
+        courseIds:
+          type: array
+          items:
+            type: string
+    CredentialAuthResponse:
       type: object
       properties:
+        user:
+          $ref: '#/components/schemas/AuthResponse'
+    StudentProfile:
+      type: object
+      required:
+        - id
+        - name
+        - role
+        - classId
+        - avatar
+        - achievements
+        - settings
+        - sandboxUnlocked
+        - progress
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        classId:
+          type: string
+        avatar:
+          $ref: '#/components/schemas/AvatarState'
+        achievements:
+          $ref: '#/components/schemas/AchievementState'
+        settings:
+          $ref: '#/components/schemas/StudentSettings'
+        sandboxUnlocked:
+          type: boolean
+        progress:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/StudentLevelProgress'
+    AvatarState:
+      type: object
+      required:
+        - equipped
+        - unlocked
+      properties:
+        equipped:
+          type: string
+        unlocked:
+          type: array
+          items:
+            type: string
+    AchievementState:
+      type: object
+      properties:
+        badges:
+          type: array
+          items:
+            type: string
+        compendium:
+          type: array
+          items:
+            type: string
+    StudentSettings:
+      type: object
+      properties:
+        volume:
+          type: integer
+          minimum: 0
+          maximum: 100
+        lowMotion:
+          type: boolean
+        language:
+          type: string
+        resettable:
+          type: boolean
+    StudentLevelProgress:
+      type: object
+      properties:
+        stars:
+          type: integer
+        steps:
+          type: integer
+        hints:
+          type: integer
+        duration:
+          type: integer
+        bestDifference:
+          type: integer
+          nullable: true
+        completedAt:
+          type: integer
+          description: Unix timestamp in milliseconds
+        replayLog:
+          type: array
+          items:
+            $ref: '#/components/schemas/SimulationStep'
+    StudentMapResponse:
+      type: object
+      required:
+        - chapters
+      properties:
+        chapters:
+          type: array
+          items:
+            $ref: '#/components/schemas/MapChapter'
+    MapChapter:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        order:
+          type: integer
         levels:
           type: array
           items:
-            $ref: '#/components/schemas/LevelSummary'
-    LevelSummary:
+            $ref: '#/components/schemas/MapLevel'
+    MapLevel:
       type: object
       properties:
         id:
@@ -189,45 +476,251 @@ components:
           type: string
         status:
           type: string
+          enum: [locked, unlocked, completed]
+        stars:
+          type: integer
+        bestDifference:
+          type: integer
+          nullable: true
+        rewards:
+          $ref: '#/components/schemas/LevelRewards'
+    LevelRewards:
+      type: object
+      properties:
+        outfit:
+          type: string
+        stars:
+          type: integer
     LevelPrepResponse:
+      type: object
+      properties:
+        levelId:
+          type: string
+        victoryCondition:
+          $ref: '#/components/schemas/LevelGoal'
+        allowedBlocks:
+          type: array
+          items:
+            type: string
+        comic:
+          type: string
+        rewards:
+          $ref: '#/components/schemas/LevelRewards'
+    StudentLevelDetail:
       type: object
       properties:
         id:
           type: string
-        starterCode:
+        name:
           type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        tiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tile'
+        start:
+          $ref: '#/components/schemas/Position'
+        goal:
+          $ref: '#/components/schemas/LevelGoal'
+        bestSteps:
+          type: integer
         hints:
           type: array
           items:
             type: string
-    LevelRunRequest:
-      type: object
-      properties:
-        code:
+        allowedBlocks:
+          type: array
+          items:
+            type: string
+        comic:
           type: string
-        language:
-          type: string
-    LevelRunResponse:
-      type: object
-      properties:
-        taskId:
+        rewards:
+          $ref: '#/components/schemas/LevelRewards'
+        chapterId:
           type: string
         status:
           type: string
-        output:
-          type: string
-    LevelCompleteRequest:
+          enum: [locked, unlocked, completed]
+        progress:
+          $ref: '#/components/schemas/StudentLevelProgress'
+          nullable: true
+    Tile:
       type: object
       properties:
-        score:
-          type: number
-        completedAt:
+        x:
+          type: integer
+        y:
+          type: integer
+        walkable:
+          type: boolean
+        collectible:
           type: string
-          format: date-time
-    SandboxRunRequest:
+    Position:
       type: object
       properties:
-        code:
+        x:
+          type: integer
+        y:
+          type: integer
+        facing:
           type: string
+          enum: [north, south, east, west]
+    LevelGoal:
+      type: object
+      properties:
+        collectibles:
+          type: integer
+          nullable: true
+        reach:
+          $ref: '#/components/schemas/GoalPosition'
+        stepLimit:
+          type: integer
+          nullable: true
+    GoalPosition:
+      type: object
+      properties:
+        x:
+          type: integer
+        y:
+          type: integer
+    StudentRunRequest:
+      type: object
+      required:
+        - program
+      properties:
+        program:
+          type: array
+          items:
+            $ref: '#/components/schemas/Instruction'
+    Instruction:
+      type: object
+      properties:
+        type:
+          type: string
+        direction:
+          type: string
+          enum: [left, right]
+        times:
+          type: integer
+        body:
+          type: array
+          items:
+            $ref: '#/components/schemas/Instruction'
+        condition:
+          $ref: '#/components/schemas/Condition'
+        truthy:
+          type: array
+          items:
+            $ref: '#/components/schemas/Instruction'
+        falsy:
+          type: array
+          items:
+            $ref: '#/components/schemas/Instruction'
+    Condition:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [tile-ahead-walkable, collectibles-remaining]
+    SimulationStep:
+      type: object
+      properties:
+        index:
+          type: integer
+        instruction:
+          $ref: '#/components/schemas/Instruction'
+        position:
+          $ref: '#/components/schemas/Position'
+        collectibles:
+          type: integer
+    SimulationMetadata:
+      type: object
+      properties:
+        bestSteps:
+          type: integer
+        goal:
+          $ref: '#/components/schemas/LevelGoal'
+    SimulationResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        steps:
+          type: integer
+        stars:
+          type: integer
+        errorCode:
+          type: string
+          nullable: true
+        remainingCollectibles:
+          type: integer
+        log:
+          type: array
+          items:
+            $ref: '#/components/schemas/SimulationStep'
+        metadata:
+          $ref: '#/components/schemas/SimulationMetadata'
+    StudentCompleteRequest:
+      type: object
+      required:
+        - stars
+        - steps
+      properties:
+        stars:
+          type: integer
+        steps:
+          type: integer
+        hints:
+          type: integer
+          nullable: true
+        duration:
+          type: integer
+          nullable: true
+        bestDifference:
+          type: integer
+          nullable: true
+        replayLog:
+          type: array
+          items:
+            $ref: '#/components/schemas/SimulationStep'
+    StudentHintRequest:
+      type: object
+      required:
+        - attempts
+      properties:
+        attempts:
+          type: integer
+        lastError:
+          type: string
+          nullable: true
+    HintResponse:
+      type: object
+      properties:
+        hint:
+          type: string
+    StudentSettingsUpdate:
+      type: object
+      properties:
+        volume:
+          type: integer
+          minimum: 0
+          maximum: 100
+        lowMotion:
+          type: boolean
         language:
+          type: string
+    StatusResponse:
+      type: object
+      properties:
+        status:
+          type: string
+    StudentAvatarUpdate:
+      type: object
+      required:
+        - equipped
+      properties:
+        equipped:
           type: string

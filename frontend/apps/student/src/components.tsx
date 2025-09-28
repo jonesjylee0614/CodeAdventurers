@@ -371,7 +371,7 @@ export interface AdventureMapProps {
     levels: Array<{
       id: string;
       name: string;
-      status: 'locked' | 'available' | 'completed';
+      status: 'locked' | 'unlocked' | 'completed';
       stars: number;
     }>;
   }>;
@@ -488,8 +488,8 @@ export const AdventureMap: React.FC<AdventureMapProps> = ({ chapters, onSelect }
           color: white;
         }
         
-        .level-status.available {
-          background: #ff9800;
+        .level-status.unlocked {
+          background: #3b82f6;
           color: white;
         }
         
@@ -538,7 +538,7 @@ export const AdventureMap: React.FC<AdventureMapProps> = ({ chapters, onSelect }
             >
               <div className={`level-status ${level.status}`}>
                 {level.status === 'locked' ? '🔒' :
-                 level.status === 'available' ? '🎯' : '✓'}
+                 level.status === 'unlocked' ? '🎯' : '✓'}
               </div>
               
               <div className="level-name">{level.name}</div>
