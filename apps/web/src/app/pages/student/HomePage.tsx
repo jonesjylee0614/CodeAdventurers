@@ -11,15 +11,25 @@ import { StudentProfile } from '../../../services/api/client';
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const { 
-    user, 
-    chapters, 
-    loading, 
-    error, 
-    loadStudentData, 
+  const {
+    user,
+    chapters,
+    loading,
+    error,
+    loadStudentData,
     loadChapters,
-    isLoggedIn 
-  } = useAppStore();
+    isLoggedIn,
+    openAuthModal,
+  } = useAppStore((state) => ({
+    user: state.user,
+    chapters: state.chapters,
+    loading: state.loading,
+    error: state.error,
+    loadStudentData: state.loadStudentData,
+    loadChapters: state.loadChapters,
+    isLoggedIn: state.isLoggedIn,
+    openAuthModal: state.openAuthModal,
+  }));
   
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
   const [recentLevels, setRecentLevels] = useState<any[]>([]);
@@ -27,10 +37,9 @@ const HomePage = () => {
   // 重定向到登录页面如果未登录
   useEffect(() => {
     if (!isLoggedIn) {
-      navigate('/auth');
-      return;
+      openAuthModal('student');
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, openAuthModal]);
 
   // 加载学生数据
   useEffect(() => {

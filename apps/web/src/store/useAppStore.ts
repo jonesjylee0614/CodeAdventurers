@@ -1,6 +1,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { apiClient, StudentProfile, User, Level, Chapter, ApiResponse } from '../services/api/client';
+import {
+  apiClient,
+  StudentProfile,
+  User,
+  Level,
+  Chapter,
+  TeacherProfile,
+  ParentProfile
+} from '../services/api/client';
+
+export type AuthMode = 'guest' | 'student' | 'teacher' | 'parent';
 
 export interface GameState {
   currentLevel?: Level;
@@ -14,8 +24,13 @@ export interface GameState {
 
 export interface AppState {
   // 用户状态
-  user?: User | StudentProfile;
+  user?: User | StudentProfile | TeacherProfile | ParentProfile;
   isLoggedIn: boolean;
+
+  auth: {
+    isOpen: boolean;
+    mode: AuthMode;
+  };
   
   // 学生端数据
   chapters: Chapter[];
@@ -29,14 +44,22 @@ export interface AppState {
   error?: string;
   
   // 动作
-  setUser: (user: User | StudentProfile) => void;
+  setUser: (user: User | StudentProfile | TeacherProfile | ParentProfile) => void;
   logout: () => void;
   setLoading: (loading: boolean) => void;
   setError: (error?: string) => void;
+
+  openAuthModal: (mode?: AuthMode) => void;
+  closeAuthModal: () => void;
   
   // 认证动作
   loginAsGuest: (name?: string) => Promise<boolean>;
   joinClass: (inviteCode: string, name: string) => Promise<boolean>;
+  loginWithCredentials: (payload: {
+    identifier: string;
+    password: string;
+    role: 'teacher' | 'parent' | 'admin' | 'student';
+  }) => Promise<boolean>;
   
   // 学生端动作
   loadStudentData: () => Promise<void>;
@@ -45,12 +68,13 @@ export interface AppState {
   // 游戏动作
   setCurrentLevel: (level: Level) => void;
   setProgram: (program: any[]) => void;
-  runProgram: () => Promise<void>;
+  runProgram: (programOverride?: any[]) => Promise<any | undefined>;
   completeLevel: (data: {
     stars: number;
     steps: number;
     hints?: number;
     duration?: number;
+    bestDifference?: number;
   }) => Promise<void>;
   getHint: () => Promise<void>;
   resetGame: () => void;
@@ -61,6 +85,10 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       // 初始状态
       isLoggedIn: false,
+      auth: {
+        isOpen: false,
+        mode: 'guest',
+      },
       chapters: [],
       game: {
         currentProgram: [],
@@ -73,12 +101,20 @@ export const useAppStore = create<AppState>()(
       // 基础动作
       setUser: (user) => {
         apiClient.setUserId(user.id);
-        set({ user, isLoggedIn: true });
+        set((state) => ({
+          user,
+          isLoggedIn: true,
+          auth: {
+            ...state.auth,
+            isOpen: false,
+          },
+        }));
       },
 
       logout: () => {
-        set({ 
-          user: undefined, 
+        apiClient.setUserId(null);
+        set({
+          user: undefined,
           isLoggedIn: false,
           chapters: [],
           game: {
@@ -86,13 +122,36 @@ export const useAppStore = create<AppState>()(
             isRunning: false,
             hints: [],
             attempts: 0,
-          }
+          },
+          auth: {
+            isOpen: false,
+            mode: 'guest',
+          },
         });
       },
 
       setLoading: (loading) => set({ loading }),
-      
+
       setError: (error) => set({ error }),
+
+      openAuthModal: (mode = 'guest') => {
+        set({
+          auth: {
+            isOpen: true,
+            mode,
+          },
+          error: undefined,
+        });
+      },
+
+      closeAuthModal: () => {
+        set((state) => ({
+          auth: {
+            ...state.auth,
+            isOpen: false,
+          },
+        }));
+      },
 
       // 认证动作
       loginAsGuest: async (name) => {
@@ -119,7 +178,7 @@ export const useAppStore = create<AppState>()(
           }
           
           return false;
-        } catch (error) {
+        } catch {
           set({ error: '登录失败', loading: false });
           return false;
         }
@@ -127,7 +186,7 @@ export const useAppStore = create<AppState>()(
 
       joinClass: async (inviteCode, name) => {
         set({ loading: true, error: undefined });
-        
+
         try {
           const response = await apiClient.joinClass(inviteCode, name);
           
@@ -152,6 +211,31 @@ export const useAppStore = create<AppState>()(
           return false;
         } catch (error) {
           set({ error: '加入班级失败', loading: false });
+          return false;
+        }
+      },
+
+      loginWithCredentials: async ({ identifier, password, role }) => {
+        set({ loading: true, error: undefined });
+
+        try {
+          const response = await apiClient.loginWithCredentials({ identifier, password, role });
+          if (response.error) {
+            set({ error: response.error, loading: false });
+            return false;
+          }
+
+          if (response.data?.user) {
+            const authenticatedUser = response.data.user as User | StudentProfile | TeacherProfile | ParentProfile;
+            get().setUser(authenticatedUser);
+            set({ loading: false });
+            return true;
+          }
+
+          set({ loading: false, error: '登录失败' });
+          return false;
+        } catch (error) {
+          set({ error: '登录失败', loading: false });
           return false;
         }
       },
@@ -223,55 +307,59 @@ export const useAppStore = create<AppState>()(
         });
       },
 
-      runProgram: async () => {
+      runProgram: async (programOverride) => {
         const { game } = get();
         if (!game.currentLevel) return;
 
-        set({ 
-          game: { 
-            ...game, 
-            isRunning: true 
-          } 
+        set({
+          game: {
+            ...game,
+            isRunning: true
+          }
         });
 
         try {
+          const program = Array.isArray(programOverride) ? programOverride : game.currentProgram;
           const response = await apiClient.runLevel(
-            game.currentLevel.id, 
-            game.currentProgram
+            game.currentLevel.id,
+            program
           );
-          
+
           if (response.error) {
-            set({ 
+            set({
               error: response.error,
-              game: { 
-                ...game, 
+              game: {
+                ...game,
                 isRunning: false,
                 attempts: game.attempts + 1,
                 lastError: response.error
-              } 
+              }
             });
-            return;
+            return undefined;
           }
-          
+
           if (response.data) {
-            set({ 
-              game: { 
-                ...game, 
+            set({
+              game: {
+                ...game,
+                currentProgram: program,
                 simulationResult: response.data,
                 isRunning: false,
                 attempts: game.attempts + 1,
                 lastError: response.data.success ? undefined : response.data.errorCode
-              } 
+              }
             });
+            return response.data;
           }
         } catch (error) {
-          set({ 
+          set({
             error: '运行程序失败',
-            game: { 
-              ...game, 
-              isRunning: false 
-            } 
+            game: {
+              ...game,
+              isRunning: false
+            }
           });
+          return undefined;
         }
       },
 
@@ -289,7 +377,7 @@ export const useAppStore = create<AppState>()(
             set({ error: response.error });
             return;
           }
-          
+
           // 重新加载章节数据以更新进度
           get().loadChapters();
         } catch (error) {

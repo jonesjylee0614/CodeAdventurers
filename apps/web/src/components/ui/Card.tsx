@@ -1,17 +1,28 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import type { HTMLAttributes, PropsWithChildren, ReactNode } from 'react';
 import clsx from 'clsx';
 
 import './card.css';
 
-export interface CardProps {
+type CardSize = 'sm' | 'md' | 'lg';
+
+export interface CardProps extends Omit<HTMLAttributes<HTMLElement>, 'title'> {
   title?: ReactNode;
   subtitle?: ReactNode;
   actions?: ReactNode;
   className?: string;
+  size?: CardSize;
 }
 
-export const Card = ({ children, title, subtitle, actions, className }: PropsWithChildren<CardProps>) => (
-  <section className={clsx('ui-card', className)}>
+export const Card = ({
+  children,
+  title,
+  subtitle,
+  actions,
+  className,
+  size = 'md',
+  ...rest
+}: PropsWithChildren<CardProps>) => (
+  <section className={clsx('ui-card', `ui-card--${size}`, className)} {...rest}>
     {(title || subtitle || actions) && (
       <header className="ui-card__header">
         <div>

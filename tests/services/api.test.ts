@@ -23,6 +23,23 @@ async function withStudent() {
   return 'student-1';
 }
 
+describe('认证入口', () => {
+  it('支持教师与家长账号登录', async () => {
+    await withStudent();
+    const teacherLogin = await request(app)
+      .post('/api/auth/login')
+      .send({ identifier: 'teacher-1', password: 'teach123', role: 'teacher' });
+    expect(teacherLogin.body.user.role).toBe('teacher');
+    expect(teacherLogin.body.user.managedClassIds.length).toBeGreaterThan(0);
+
+    const parentLogin = await request(app)
+      .post('/api/auth/login')
+      .send({ identifier: '陈妈妈', password: 'parent123', role: 'parent' });
+    expect(parentLogin.body.user.childIds.length).toBeGreaterThan(0);
+    expect(parentLogin.body.user.settings.reminderTime).toBeDefined();
+  });
+});
+
 describe('学生端功能闭环', () => {
   it('完成首关并解锁沙盒、装扮与图鉴', async () => {
     const studentId = await withStudent();
@@ -136,6 +153,7 @@ describe('教师端管理与看板', () => {
 
     const courses = await request(app).get('/api/teacher/courses').set('x-user-id', teacherId);
     expect(courses.body.courses[0].name).toBeDefined();
+    expect(Array.isArray(courses.body.courses[0].chapters)).toBe(true);
 
     const newCourse = await request(app)
       .post('/api/teacher/courses')
@@ -202,6 +220,15 @@ describe('教师端管理与看板', () => {
       .set('x-user-id', teacherId);
     expect(heatmap.body.heatmap.length).toBeGreaterThan(0);
 
+    const classes = await request(app).get('/api/teacher/classes').set('x-user-id', teacherId);
+    expect(classes.body.classes[0].averageProgress).toBeGreaterThanOrEqual(0);
+
+    const classDetail = await request(app)
+      .get('/api/teacher/classes/class-1')
+      .set('x-user-id', teacherId);
+    expect(classDetail.body.class.id).toBe('class-1');
+    expect(classDetail.body.students.length).toBeGreaterThanOrEqual(0);
+
     const replays = await request(app)
       .get('/api/teacher/analytics/replays/student-1/level-1')
       .set('x-user-id', teacherId);
@@ -240,6 +267,19 @@ describe('家长与管理员视角', () => {
       .get('/api/parent/children/student-1/progress')
       .set('x-user-id', parentId);
     expect(progress.status).toBe(200);
+
+    const overviewParent = await request(app).get('/api/parent/overview').set('x-user-id', parentId);
+    expect(overviewParent.body.children[0].id).toBe('student-1');
+
+    const updatedSettings = await request(app)
+      .put('/api/parent/settings')
+      .set('x-user-id', parentId)
+      .send({ reminderTime: '19:30', notifyChannels: ['email', 'app'] });
+    expect(updatedSettings.body.reminderTime).toBe('19:30');
+    expect(updatedSettings.body.notifyChannels).toContain('email');
+
+    const fetchedSettings = await request(app).get('/api/parent/settings').set('x-user-id', parentId);
+    expect(fetchedSettings.body.notifyChannels).toContain('email');
 
     const overview = await request(app).get('/api/admin/overview').set('x-user-id', adminId);
     expect(overview.body.activeUsers).toBeGreaterThan(0);

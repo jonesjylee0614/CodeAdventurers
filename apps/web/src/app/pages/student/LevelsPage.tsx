@@ -21,21 +21,28 @@ const LevelsPage = () => {
   const [filter, setFilter] = useState('all');
   const [selectedChapter, setSelectedChapter] = useState<string>('all');
   
-  const { 
-    chapters, 
-    loading, 
-    error, 
-    isLoggedIn, 
-    loadChapters 
-  } = useAppStore();
+  const {
+    chapters,
+    loading,
+    error,
+    isLoggedIn,
+    loadChapters,
+    openAuthModal,
+  } = useAppStore((state) => ({
+    chapters: state.chapters,
+    loading: state.loading,
+    error: state.error,
+    isLoggedIn: state.isLoggedIn,
+    loadChapters: state.loadChapters,
+    openAuthModal: state.openAuthModal,
+  }));
 
   // 重定向到登录页面如果未登录
   useEffect(() => {
     if (!isLoggedIn) {
-      navigate('/auth');
-      return;
+      openAuthModal('student');
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, openAuthModal]);
 
   // 加载章节数据
   useEffect(() => {

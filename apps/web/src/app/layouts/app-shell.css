@@ -43,6 +43,7 @@
 
 .app-shell__actions {
   display: inline-flex;
+  align-items: center;
   gap: 0.75rem;
 }
 
@@ -52,6 +53,17 @@
   border-radius: 999px;
   padding: 0.5rem 1rem;
   color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.app-shell__actions button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.app-shell__welcome {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .app-shell__main {
