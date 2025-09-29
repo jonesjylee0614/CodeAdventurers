@@ -1,5 +1,17 @@
 import * as React from 'react';
 import * as Engine from '@engine/index.ts';
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useDroppable,
+  useDraggable,
+  useSensor,
+  useSensors,
+  DragOverEvent,
+} from '@dnd-kit/core';
 
 type Instruction = Engine.Instruction;
 type LevelDefinition = Engine.LevelDefinition;
@@ -33,6 +45,29 @@ type BlockPath = number[];
 type DragTarget = {
   path: BlockPath | null;
   index: number;
+};
+
+type DragSource =
+  | { source: 'palette'; blockType: BlockType }
+  | { source: 'program'; block: ProgramBlock; path: BlockPath };
+
+const pathKey = (path: BlockPath | null) =>
+  !path || path.length === 0 ? 'root' : path.join('-');
+
+const dropZoneId = (path: BlockPath | null, index: number) => `${pathKey(path)}::${index}`;
+
+const normalizePath = (path: BlockPath | null): BlockPath => (path ? [...path] : []);
+
+const pathsEqual = (a: BlockPath | null, b: BlockPath | null) => {
+  const pathA = normalizePath(a);
+  const pathB = normalizePath(b);
+  return pathA.length === pathB.length && pathA.every((value, index) => value === pathB[index]);
+};
+
+const isDescendantPath = (ancestor: BlockPath, candidate: BlockPath): boolean => {
+  if (ancestor.length === 0) return false;
+  if (candidate.length < ancestor.length) return false;
+  return ancestor.every((value, index) => candidate[index] === value);
 };
 
 interface BlockEditorProps {
@@ -250,11 +285,18 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   allowedBlocks,
   onProgramChange,
 }) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  );
   const [programBlocks, setProgramBlocks] = React.useState<ProgramBlock[]>([]);
   const [selectedPath, setSelectedPath] = React.useState<BlockPath | null>(null);
   const [isRunning, setIsRunning] = React.useState(false);
   const [result, setResult] = React.useState<SimulationResult | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [activeDrag, setActiveDrag] = React.useState<DragSource | null>(null);
+  const [dropTarget, setDropTarget] = React.useState<DragTarget | null>(null);
 
   const availableBlockTypes = React.useMemo(() => {
     if (!allowedBlocks || allowedBlocks.length === 0) {
@@ -347,6 +389,74 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     setError(null);
   };
 
+  const handleDragStart = React.useCallback((event: DragStartEvent) => {
+    const data = event.active.data.current as DragSource | undefined;
+    if (!data) return;
+    setActiveDrag(data);
+  }, []);
+
+  const handleDragOver = React.useCallback((event: DragOverEvent) => {
+    const data = event.over?.data.current as { target?: DragTarget } | undefined;
+    setDropTarget(data?.target ?? null);
+  }, []);
+
+  const handleDragEnd = React.useCallback(
+    (event: DragEndEvent) => {
+      const data = event.active.data.current as DragSource | undefined;
+      const overData = event.over?.data.current as { target?: DragTarget } | undefined;
+      const target = overData?.target;
+
+      if (data && target) {
+        if (data.source === 'palette') {
+          setProgramBlocks((prev) => insertBlock(prev, data.blockType, target));
+          setError(null);
+        } else if (data.source === 'program') {
+          const fromPath = data.path;
+          const targetPath = normalizePath(target.path);
+
+          if (isDescendantPath(fromPath, [...targetPath, target.index])) {
+            setActiveDrag(null);
+            setDropTarget(null);
+            return;
+          }
+
+          const fromParent = fromPath.slice(0, -1);
+          const targetParent = targetPath;
+          const fromIndex = fromPath[fromPath.length - 1];
+          let targetIndex = target.index;
+
+          if (pathsEqual(fromParent, targetParent)) {
+            if (targetIndex > fromIndex) {
+              targetIndex -= 1;
+            }
+            if (targetIndex === fromIndex) {
+              setActiveDrag(null);
+              setDropTarget(null);
+              return;
+            }
+          }
+
+          const adjustedTarget: DragTarget = {
+            path: targetParent.length > 0 ? targetParent : null,
+            index: targetIndex,
+          };
+
+          setProgramBlocks((prev) => moveBlock(prev, fromPath, adjustedTarget));
+          setError(null);
+        }
+      }
+
+      setActiveDrag(null);
+      setDropTarget(null);
+    },
+    [setProgramBlocks]
+  );
+
+  const handleDragCancel = React.useCallback(() => {
+    setActiveDrag(null);
+    setDropTarget(null);
+  }, []);
+
   const handleRun = async () => {
     if (isRunning) return;
     try {
@@ -370,41 +480,57 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     onReset();
   };
 
-  const renderBlocks = (blocks: ProgramBlock[], parentPath: BlockPath = []): React.ReactNode =>
-    blocks.map((block, index) => {
+  const isActiveTarget = (candidate: DragTarget) =>
+    !!dropTarget && dropTarget.index === candidate.index && pathsEqual(dropTarget.path, candidate.path);
+
+  const renderBlockList = (blocks: ProgramBlock[], parentPath: BlockPath = []): React.ReactNode => {
+    if (blocks.length === 0) {
+      const target: DragTarget = { path: parentPath.length > 0 ? parentPath : null, index: 0 };
+      return (
+        <ProgramDropZone
+          key={`drop-${dropZoneId(parentPath, 0)}`}
+          id={dropZoneId(parentPath, 0)}
+          target={target}
+          isActive={isActiveTarget(target)}
+          placeholder={parentPath.length === 0 ? '将积木拖拽到此处开始编程' : '拖拽积木到此处'}
+          compact={parentPath.length > 0}
+        />
+      );
+    }
+
+    const elements: React.ReactNode[] = [];
+    for (let index = 0; index <= blocks.length; index += 1) {
+      const target: DragTarget = { path: parentPath.length > 0 ? parentPath : null, index };
+      elements.push(
+        <ProgramDropZone
+          key={`drop-${dropZoneId(parentPath, index)}`}
+          id={dropZoneId(parentPath, index)}
+          target={target}
+          isActive={isActiveTarget(target)}
+          compact={parentPath.length > 0}
+        />
+      );
+
+      if (index === blocks.length) {
+        break;
+      }
+
+      const block = blocks[index];
       const path = [...parentPath, index];
       const isSelected = selectedPath && path.join(',') === selectedPath.join(',');
-      const canHaveChildren = block.blockType.category === 'control' || block.blockType.category === 'condition';
-      return (
-        <div key={block.id} className={`program-item ${isSelected ? 'selected' : ''}`}>
-          <div
-            role="button"
-            tabIndex={0}
-            className="program-block"
-            style={{ backgroundColor: block.blockType.color }}
-            onClick={() => setSelectedPath(path)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                setSelectedPath(path);
-              }
-            }}
-          >
-            <div className="program-block__label">
-              <span className="icon">{block.blockType.icon}</span>
-              <span>{block.blockType.label}</span>
-            </div>
-            <div className="program-block__actions">
-              <button type="button" onClick={() => handleMove(path, 'up')} title="上移">
-                ↑
-              </button>
-              <button type="button" onClick={() => handleMove(path, 'down')} title="下移">
-                ↓
-              </button>
-              <button type="button" onClick={() => handleDeleteBlock(path)} title="删除">
-                ×
-              </button>
-            </div>
-          </div>
+      const canHaveChildren =
+        block.blockType.category === 'control' || block.blockType.category === 'condition';
+
+      elements.push(
+        <DraggableProgramBlock
+          key={block.id}
+          block={block}
+          path={path}
+          isSelected={!!isSelected}
+          onSelect={setSelectedPath}
+          onMove={handleMove}
+          onDelete={handleDeleteBlock}
+        >
           {canHaveChildren && (
             <div className="program-children">
               <div className="child-controls">
@@ -414,23 +540,40 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   onAdd={(blockType) => addBlock(blockType, path)}
                 />
               </div>
-              <div className="child-list">{renderBlocks(block.children ?? [], path)}</div>
+              <div className="child-list">{renderBlockList(block.children ?? [], path)}</div>
             </div>
           )}
-        </div>
+        </DraggableProgramBlock>
       );
-    });
+    }
+
+    return elements;
+  };
+
+const overlayBlockType =
+  activeDrag?.source === 'palette'
+    ? activeDrag.blockType
+    : activeDrag?.source === 'program'
+      ? activeDrag.block.blockType
+      : null;
 
   return (
-    <div className="block-editor">
-      <style>{`
-        .block-editor {
-          display: grid;
-          grid-template-columns: 260px 1fr 280px;
-          gap: 20px;
-          min-height: 520px;
-          font-family: 'Microsoft YaHei', sans-serif;
-        }
+    <DndContext
+      sensors={sensors}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
+    >
+      <div className="block-editor">
+        <style>{`
+          .block-editor {
+            display: grid;
+            grid-template-columns: 260px 1fr 280px;
+            gap: 20px;
+            min-height: 520px;
+            font-family: 'Microsoft YaHei', sans-serif;
+          }
         .palette,
         .program-panel,
         .inspector {
@@ -460,16 +603,24 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           border-radius: 10px;
           border: none;
           padding: 10px 12px;
-          cursor: pointer;
+          cursor: grab;
+          user-select: none;
+          touch-action: none;
           color: #0f172a;
           font-weight: 500;
           background: white;
           box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.2);
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
+          transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
         }
         .palette-button:hover {
           transform: translateY(-1px);
           box-shadow: 0 4px 10px rgba(148, 163, 184, 0.25);
+        }
+        .palette-button:active {
+          cursor: grabbing;
+        }
+        .palette-button.dragging {
+          opacity: 0.6;
         }
         .palette-icon {
           display: inline-flex;
@@ -489,12 +640,17 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         .program-list {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 6px;
+          min-height: 260px;
+          padding: 8px 0;
         }
         .program-item {
           display: flex;
           flex-direction: column;
           gap: 8px;
+        }
+        .program-item.dragging {
+          opacity: 0.4;
         }
         .program-item.selected .program-block {
           outline: 3px solid rgba(14, 165, 233, 0.4);
@@ -526,6 +682,14 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           cursor: pointer;
           background: rgba(255, 255, 255, 0.3);
           color: white;
+        }
+        .program-block__actions .drag-handle {
+          background: rgba(15, 23, 42, 0.25);
+          cursor: grab;
+          font-size: 16px;
+        }
+        .program-block__actions .drag-handle:active {
+          cursor: grabbing;
         }
         .program-children {
           margin-left: 20px;
@@ -560,6 +724,41 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           background: #2563eb;
           color: white;
           cursor: pointer;
+        }
+        .drop-zone {
+          border: 2px dashed rgba(148, 163, 184, 0.3);
+          border-radius: 12px;
+          min-height: 14px;
+          transition: all 0.2s ease;
+          background: rgba(241, 245, 249, 0.4);
+          margin: 4px 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #94a3b8;
+          font-size: 12px;
+          padding: 4px 6px;
+        }
+        .drop-zone--compact {
+          min-height: 10px;
+          border-radius: 10px;
+          margin: 2px 0;
+          font-size: 11px;
+        }
+        .drop-zone.active {
+          border-color: rgba(56, 189, 248, 0.9);
+          background: rgba(56, 189, 248, 0.18);
+          color: #0284c7;
+        }
+        .drag-preview {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 16px;
+          border-radius: 10px;
+          color: white;
+          box-shadow: 0 12px 24px rgba(15, 23, 42, 0.3);
+          font-weight: 600;
         }
         .inspector {
           display: grid;
@@ -620,24 +819,14 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       `}</style>
 
       <aside className="palette">
+        <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>
+          拖动或点击积木，将它们放到程序区中进行组合。
+        </p>
         <div>
           <h4>动作积木</h4>
           <div className="palette-group">
             {groupedBlockTypes.action.map((block) => (
-              <button
-                key={block.id}
-                type="button"
-                className="palette-button"
-                onClick={() => addBlock(block)}
-              >
-                <span style={{ display: 'flex', alignItems: 'center' }}>
-                  <span className="palette-icon" style={{ background: `${block.color}20` }}>
-                    {block.icon}
-                  </span>
-                  {block.label}
-                </span>
-                <span>添加</span>
-              </button>
+              <PaletteButton key={block.id} block={block} onAdd={addBlock} />
             ))}
           </div>
         </div>
@@ -645,20 +834,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           <h4>控制积木</h4>
           <div className="palette-group">
             {groupedBlockTypes.control.map((block) => (
-              <button
-                key={block.id}
-                type="button"
-                className="palette-button"
-                onClick={() => addBlock(block)}
-              >
-                <span style={{ display: 'flex', alignItems: 'center' }}>
-                  <span className="palette-icon" style={{ background: `${block.color}20` }}>
-                    {block.icon}
-                  </span>
-                  {block.label}
-                </span>
-                <span>添加</span>
-              </button>
+              <PaletteButton key={block.id} block={block} onAdd={addBlock} />
             ))}
           </div>
         </div>
@@ -666,20 +842,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           <h4>条件积木</h4>
           <div className="palette-group">
             {groupedBlockTypes.condition.map((block) => (
-              <button
-                key={block.id}
-                type="button"
-                className="palette-button"
-                onClick={() => addBlock(block)}
-              >
-                <span style={{ display: 'flex', alignItems: 'center' }}>
-                  <span className="palette-icon" style={{ background: `${block.color}20` }}>
-                    {block.icon}
-                  </span>
-                  {block.label}
-                </span>
-                <span>添加</span>
-              </button>
+              <PaletteButton key={block.id} block={block} onAdd={addBlock} />
             ))}
           </div>
         </div>
@@ -689,26 +852,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         <header>
           <h3 style={{ margin: '0 0 8px', color: '#0f172a' }}>程序区</h3>
           <p style={{ margin: 0, color: '#64748b', fontSize: '14px' }}>
-            点击积木可设置参数，使用控制类积木为程序增加结构。
+            拖拽积木排序或嵌套，点击积木可设置参数。
           </p>
         </header>
-        <div className="program-list">
-          {programBlocks.length === 0 ? (
-            <div
-              style={{
-                border: '2px dashed rgba(148, 163, 184, 0.4)',
-                borderRadius: '12px',
-                padding: '24px',
-                textAlign: 'center',
-                color: '#64748b',
-              }}
-            >
-              从左侧选择积木开始搭建程序。
-            </div>
-          ) : (
-            renderBlocks(programBlocks)
-          )}
-        </div>
+        <div className="program-list">{renderBlockList(programBlocks)}</div>
       </section>
 
       <aside className="inspector">
@@ -787,6 +934,165 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           </section>
         )}
       </aside>
+      </div>
+      <DragOverlay>
+        {overlayBlockType && (
+          <div className="drag-preview" style={{ backgroundColor: overlayBlockType.color }}>
+            <span className="icon">{overlayBlockType.icon}</span>
+            <span>{overlayBlockType.label}</span>
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
+  );
+};
+
+interface PaletteButtonProps {
+  block: BlockType;
+  onAdd: (blockType: BlockType, parentPath?: BlockPath | null) => void;
+}
+
+const PaletteButton: React.FC<PaletteButtonProps> = ({ block, onAdd }) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `palette-${block.id}`,
+    data: { source: 'palette', blockType: block } as DragSource,
+  });
+
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      className={`palette-button${isDragging ? ' dragging' : ''}`}
+      onClick={() => onAdd(block)}
+      {...listeners}
+      {...attributes}
+    >
+      <span style={{ display: 'flex', alignItems: 'center' }}>
+        <span className="palette-icon" style={{ background: `${block.color}20` }}>
+          {block.icon}
+        </span>
+        {block.label}
+      </span>
+      <span>添加</span>
+    </button>
+  );
+};
+
+interface ProgramDropZoneProps {
+  id: string;
+  target: DragTarget;
+  isActive: boolean;
+  placeholder?: string;
+  compact?: boolean;
+}
+
+const ProgramDropZone: React.FC<ProgramDropZoneProps> = ({
+  id,
+  target,
+  isActive,
+  placeholder,
+  compact,
+}) => {
+  const { setNodeRef, isOver } = useDroppable({ id, data: { target } });
+  const className = [
+    'drop-zone',
+    compact ? 'drop-zone--compact' : '',
+    isActive || isOver ? 'active' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <div ref={setNodeRef} className={className}>
+      {placeholder && <span>{placeholder}</span>}
+    </div>
+  );
+};
+
+interface DraggableProgramBlockProps {
+  block: ProgramBlock;
+  path: BlockPath;
+  isSelected: boolean;
+  onSelect: (path: BlockPath) => void;
+  onMove: (path: BlockPath, direction: 'up' | 'down') => void;
+  onDelete: (path: BlockPath) => void;
+  children?: React.ReactNode;
+}
+
+const DraggableProgramBlock: React.FC<DraggableProgramBlockProps> = ({
+  block,
+  path,
+  isSelected,
+  onSelect,
+  onMove,
+  onDelete,
+  children,
+}) => {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: `program-${block.id}`,
+    data: { source: 'program', block, path } as DragSource,
+  });
+
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
+
+  const className = [
+    'program-item',
+    isSelected ? 'selected' : '',
+    isDragging ? 'dragging' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <div ref={setNodeRef} style={style} className={className}>
+      <div
+        role="button"
+        tabIndex={0}
+        className="program-block"
+        style={{ backgroundColor: block.blockType.color }}
+        onClick={(event) => {
+          const target = event.target as HTMLElement;
+          if (target.closest('.drag-handle')) {
+            return;
+          }
+          onSelect(path);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            onSelect(path);
+          }
+        }}
+      >
+        <div className="program-block__label">
+          <span className="icon">{block.blockType.icon}</span>
+          <span>{block.blockType.label}</span>
+        </div>
+        <div className="program-block__actions">
+          <button
+            type="button"
+            className="drag-handle"
+            title="拖拽移动"
+            {...listeners}
+            {...attributes}
+          >
+            ⠿
+          </button>
+          <button type="button" onClick={() => onMove(path, 'up')} title="上移">
+            ↑
+          </button>
+          <button type="button" onClick={() => onMove(path, 'down')} title="下移">
+            ↓
+          </button>
+          <button type="button" onClick={() => onDelete(path)} title="删除">
+            ×
+          </button>
+        </div>
+      </div>
+      {children}
     </div>
   );
 };
