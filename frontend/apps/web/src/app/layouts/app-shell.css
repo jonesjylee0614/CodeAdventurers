@@ -20,6 +20,15 @@
 .app-shell__brand {
   font-weight: 700;
   letter-spacing: 0.08em;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .app-shell__header nav ul {

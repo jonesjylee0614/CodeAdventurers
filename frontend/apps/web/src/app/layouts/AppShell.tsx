@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import type { PropsWithChildren } from 'react';
 import { AuthModal } from '../components/AuthModal';
 import { useAppStore } from '../../store/useAppStore';
@@ -12,6 +12,7 @@ const primaryNav = [
 ];
 
 export const AppShell = ({ children }: PropsWithChildren) => {
+  const navigate = useNavigate();
   const { isLoggedIn, user, logout, openAuthModal } = useAppStore((state) => ({
     isLoggedIn: state.isLoggedIn,
     user: state.user,
@@ -19,10 +20,23 @@ export const AppShell = ({ children }: PropsWithChildren) => {
     openAuthModal: state.openAuthModal,
   }));
 
+  const handleBrandClick = () => {
+    if (user?.role) {
+      navigate(`/${user.role}`);
+      return;
+    }
+    openAuthModal('guest');
+  };
+
   return (
     <div className="app-shell">
       <header className="app-shell__header">
-        <div className="app-shell__brand">代码奇兵 Code Adventurers</div>
+        <button type="button" className="app-shell__brand" onClick={handleBrandClick}>
+          <span role="img" aria-label="logo">
+            🧭
+          </span>
+          代码奇兵 Code Adventurers
+        </button>
         <nav aria-label="角色切换">
           <ul>
             {primaryNav.map((item) => (
