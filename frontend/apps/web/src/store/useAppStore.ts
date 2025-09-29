@@ -145,12 +145,13 @@ export const useAppStore = create<AppState>()(
       },
 
       closeAuthModal: () => {
-        set((state) => ({
-          auth: {
-            ...state.auth,
-            isOpen: false,
-          },
-        }));
+		set((state) => ({
+			auth: {
+				...state.auth,
+				isOpen: false,
+			},
+			error: undefined,
+		}));
       },
 
       // 认证动作
@@ -205,6 +206,8 @@ export const useAppStore = create<AppState>()(
             
             get().setUser(user);
             set({ loading: false });
+            await get().loadStudentData();
+            await get().loadChapters();
             return true;
           }
           
@@ -229,6 +232,10 @@ export const useAppStore = create<AppState>()(
             const authenticatedUser = response.data.user as User | StudentProfile | TeacherProfile | ParentProfile;
             get().setUser(authenticatedUser);
             set({ loading: false });
+
+            if (authenticatedUser.role === 'student') {
+              await Promise.all([get().loadStudentData(), get().loadChapters()]);
+            }
             return true;
           }
 

@@ -49,8 +49,12 @@ var ErrInvalidInviteCode = errors.New("invalid invite code")
 func New() *Service {
 	return &Service{
 		classrooms: map[string]classroom{
-			"ABC123": {ClassID: "class-1"},
-			"DEF456": {ClassID: "class-2"},
+			normalizeInviteCode("ABC123"):    {ClassID: "class-1"},
+			normalizeInviteCode("DEF456"):    {ClassID: "class-2"},
+			normalizeInviteCode("CA-CLASS-1"): {ClassID: "class-1"},
+			normalizeInviteCode("CA-CLASS-2"): {ClassID: "class-2"},
+			normalizeInviteCode("CA-CLASS-3"): {ClassID: "class-3"},
+			normalizeInviteCode("A-CLASS-2"):  {ClassID: "class-2"},
 		},
 		credentials: map[string]map[string]credential{
 			"teacher": {
@@ -95,7 +99,7 @@ func (s *Service) GuestLogin(ctx context.Context, name string) (Profile, error) 
 
 // ClassLogin validates the class invite code and returns a student profile.
 func (s *Service) ClassLogin(ctx context.Context, inviteCode, name string) (Profile, error) {
-	class, ok := s.classrooms[strings.ToUpper(strings.TrimSpace(inviteCode))]
+	class, ok := s.classrooms[normalizeInviteCode(inviteCode)]
 	if !ok {
 		return Profile{}, ErrInvalidInviteCode
 	}
@@ -109,6 +113,12 @@ func (s *Service) ClassLogin(ctx context.Context, inviteCode, name string) (Prof
 		Role:    "student",
 		ClassID: class.ClassID,
 	}, nil
+}
+
+func normalizeInviteCode(code string) string {
+	trimmed := strings.TrimSpace(code)
+	upper := strings.ToUpper(trimmed)
+	return strings.ReplaceAll(upper, "-", "")
 }
 
 // CredentialLogin validates credentials for the provided role and returns the

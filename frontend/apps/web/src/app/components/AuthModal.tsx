@@ -132,6 +132,7 @@ export const AuthModal = () => {
     <>
       <Modal title="登录编程冒险家" open={auth.isOpen} onClose={handleClose}>
         <div className="auth-modal">
+          <div className="auth-modal__illustration" aria-hidden="true" />
           <section className="auth-modal__hero">
             <h3 className="auth-modal__hero-title">🚀 欢迎回来</h3>
             <p className="auth-modal__hero-subtitle">选择一种方式登录，继续你的冒险旅程</p>
@@ -155,6 +156,14 @@ export const AuthModal = () => {
                 <div>演示账号：</div>
                 <div>教师 <strong>teacher-1 / teach123</strong></div>
                 <div>家长 <strong>parent-1 / parent123</strong></div>
+              </div>
+              <div className="auth-modal__cta-group">
+                <Button variant="secondary" onClick={() => openAuthModal('guest')}>
+                  先试试看
+                </Button>
+                <Button variant="ghost" onClick={() => openAuthModal('student')}>
+                  输入班级邀请码
+                </Button>
               </div>
             </aside>
 

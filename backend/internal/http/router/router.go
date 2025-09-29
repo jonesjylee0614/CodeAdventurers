@@ -24,6 +24,7 @@ type Dependencies struct {
 	Auth        *authHandler.Handler
 	Student     *studentHandler.Handler
 	Teacher     *teacherHandler.Handler
+	Parent      *parentHandler.Handler
 	Health      *healthHandler.Handler
 	WS          *wsHandler.Handler
 	RateLimiter *rate.Limiter
@@ -79,6 +80,23 @@ func registerRoutes(engine *gin.Engine, deps Dependencies) {
 		teacher := api.Group("/teacher")
 		{
 			teacher.GET("/analytics/*resource", deps.Teacher.Analytics)
+			teacher.GET("/courses", deps.Teacher.Courses)
+			teacher.GET("/classes", deps.Teacher.Classes)
+			teacher.GET("/classes/:classId", deps.Teacher.ClassDetail)
+			teacher.PATCH("/classes/:classId/hint-limit", deps.Teacher.UpdateHintLimit)
+			teacher.POST("/classes/:classId/assign-course", deps.Teacher.AssignCourse)
+			teacher.GET("/works/pending", deps.Teacher.PendingWorks)
+			teacher.POST("/works/:workId/review", deps.Teacher.ReviewWork)
+		}
+
+		parent := api.Group("/parent")
+		{
+			parent.GET("/overview", deps.Parent.Overview)
+			parent.GET("/children", deps.Parent.Children)
+			parent.GET("/children/:childId/weekly-report", deps.Parent.WeeklyReport)
+			parent.GET("/children/:childId/progress", deps.Parent.Progress)
+			parent.GET("/settings", deps.Parent.Settings)
+			parent.PUT("/settings", deps.Parent.UpdateSettings)
 		}
 	}
 
