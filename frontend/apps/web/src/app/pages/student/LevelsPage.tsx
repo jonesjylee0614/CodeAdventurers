@@ -17,6 +17,7 @@ const filters = [
 ];
 
 const LevelsPage = () => {
+  console.log('=== [LevelsPage] 组件正在渲染 ===');
   const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
   const [selectedChapter, setSelectedChapter] = useState<string>('all');
@@ -37,16 +38,30 @@ const LevelsPage = () => {
     openAuthModal: state.openAuthModal,
   }));
 
+  // 调试日志
+  useEffect(() => {
+    console.log('=== [LevelsPage] 状态调试 ===');
+    console.log('[LevelsPage] isLoggedIn:', isLoggedIn);
+    console.log('[LevelsPage] chapters:', chapters);
+    console.log('[LevelsPage] loading:', loading);
+    console.log('[LevelsPage] error:', error);
+    console.log('=======================');
+  }, [isLoggedIn, chapters, loading, error]);
+
   // 重定向到登录页面如果未登录
   useEffect(() => {
     if (!isLoggedIn) {
+      console.log('[LevelsPage] 用户未登录，打开登录窗口');
       openAuthModal('student');
+    } else {
+      console.log('[LevelsPage] 用户已登录');
     }
   }, [isLoggedIn, openAuthModal]);
 
   // 加载章节数据
   useEffect(() => {
     if (isLoggedIn) {
+      console.log('[LevelsPage] 开始加载章节数据');
       loadChapters();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
