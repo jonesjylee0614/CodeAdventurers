@@ -1,5 +1,5 @@
-import { lazy, Suspense } from 'react';
-import { Navigate, Outlet, Routes, Route } from 'react-router-dom';
+import { Suspense, useEffect } from 'react';
+import { Navigate, Outlet, Routes, Route, useLocation } from 'react-router-dom';
 
 import { AppShell } from './layouts/AppShell';
 import { RoleLayout } from './layouts/RoleLayout';
@@ -9,32 +9,33 @@ import { ParentLayout } from './pages/parent/ParentLayout';
 import { AdminLayout } from './pages/admin/AdminLayout';
 import { Skeleton } from '../components/ui/Skeleton';
 
-const StudentHomePage = lazy(() => import('./pages/student/HomePage'));
-const StudentLevelsPage = lazy(() => import('./pages/student/LevelsPage'));
-const StudentLevelDetailPage = lazy(() => import('./pages/student/LevelDetailPage'));
-const StudentPlayPage = lazy(() => import('./pages/student/PlayPage'));
-const StudentResultPage = lazy(() => import('./pages/student/ResultPage'));
-const StudentAchievementsPage = lazy(() => import('./pages/student/AchievementsPage'));
-const StudentSettingsPage = lazy(() => import('./pages/student/SettingsPage'));
+// 临时禁用懒加载以排查问题
+import StudentHomePage from './pages/student/HomePage';
+import StudentLevelsPage from './pages/student/LevelsPage';
+import StudentLevelDetailPage from './pages/student/LevelDetailPage';
+import StudentPlayPage from './pages/student/PlayPage';
+import StudentResultPage from './pages/student/ResultPage';
+import StudentAchievementsPage from './pages/student/AchievementsPage';
+import StudentSettingsPage from './pages/student/SettingsPage';
 
-const TeacherOverviewPage = lazy(() => import('./pages/teacher/OverviewPage'));
-const TeacherClassesPage = lazy(() => import('./pages/teacher/ClassesPage'));
-const TeacherClassDetailPage = lazy(() => import('./pages/teacher/ClassDetailPage'));
-const TeacherAssignmentsPage = lazy(() => import('./pages/teacher/AssignmentsPage'));
-const TeacherContentPage = lazy(() => import('./pages/teacher/ContentPage'));
-const TeacherAnalyticsPage = lazy(() => import('./pages/teacher/AnalyticsPage'));
+import TeacherOverviewPage from './pages/teacher/OverviewPage';
+import TeacherClassesPage from './pages/teacher/ClassesPage';
+import TeacherClassDetailPage from './pages/teacher/ClassDetailPage';
+import TeacherAssignmentsPage from './pages/teacher/AssignmentsPage';
+import TeacherContentPage from './pages/teacher/ContentPage';
+import TeacherAnalyticsPage from './pages/teacher/AnalyticsPage';
 
-const ParentHomePage = lazy(() => import('./pages/parent/HomePage'));
-const ParentProgressPage = lazy(() => import('./pages/parent/ProgressPage'));
-const ParentSettingsPage = lazy(() => import('./pages/parent/SettingsPage'));
+import ParentHomePage from './pages/parent/HomePage';
+import ParentProgressPage from './pages/parent/ProgressPage';
+import ParentSettingsPage from './pages/parent/SettingsPage';
 
-const AdminOverviewPage = lazy(() => import('./pages/admin/OverviewPage'));
-const AdminUsersPage = lazy(() => import('./pages/admin/UsersPage'));
-const AdminCurriculumPage = lazy(() => import('./pages/admin/CurriculumPage'));
-const AdminOpsPage = lazy(() => import('./pages/admin/OpsPage'));
-const AdminSettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
+import AdminOverviewPage from './pages/admin/OverviewPage';
+import AdminUsersPage from './pages/admin/UsersPage';
+import AdminCurriculumPage from './pages/admin/CurriculumPage';
+import AdminOpsPage from './pages/admin/OpsPage';
+import AdminSettingsPage from './pages/admin/SettingsPage';
 
-const AuthPlaceholder = lazy(() => import('./pages/shared/AuthPage'));
+import AuthPlaceholder from './pages/shared/AuthPage';
 
 const LoadingFallback = () => (
   <div style={{ padding: '2rem' }}>
@@ -53,24 +54,30 @@ const NotFoundPage = () => (
 );
 
 // 学生端路由包装器
-const StudentRouteWrapper = () => (
-  <RoleLayout
-    title="学生冒险"
-    description="从地图到挑战再到成就收集的一站式体验"
-    routes={[
-      { to: '/student', label: '首页' },
-      { to: '/student/levels', label: '章节地图' },
-      { to: '/student/achievements', label: '成就' },
-      { to: '/student/settings', label: '设置' },
-    ]}
-  >
-    <StudentLayout>
-      <Suspense fallback={<LoadingFallback />}>
+const StudentRouteWrapper = () => {
+  const location = useLocation();
+  
+  useEffect(() => {
+    console.log('[StudentRouteWrapper] 路由变化:', location.pathname);
+  }, [location]);
+  
+  return (
+    <RoleLayout
+      title="学生冒险"
+      description="从地图到挑战再到成就收集的一站式体验"
+      routes={[
+        { to: '/student', label: '首页' },
+        { to: '/student/levels', label: '章节地图' },
+        { to: '/student/achievements', label: '成就' },
+        { to: '/student/settings', label: '设置' },
+      ]}
+    >
+      <StudentLayout>
         <Outlet />
-      </Suspense>
-    </StudentLayout>
-  </RoleLayout>
-);
+      </StudentLayout>
+    </RoleLayout>
+  );
+};
 
 // 教师端路由包装器
 const TeacherRouteWrapper = () => (
@@ -134,18 +141,20 @@ const AdminRouteWrapper = () => (
 );
 
 export const AppRoutes = () => {
+  const location = useLocation();
+  
   console.log('[AppRoutes] 路由组件渲染');
+  
+  useEffect(() => {
+    console.log('[AppRoutes] 路由变化:', location.pathname);
+  }, [location]);
   
   return (
     <Routes>
       <Route path="/" element={<AppShell><Outlet /></AppShell>}>
         <Route index element={<Navigate to="/student" replace />} />
         
-        <Route path="auth/*" element={
-          <Suspense fallback={<LoadingFallback />}>
-            <AuthPlaceholder />
-          </Suspense>
-        } />
+        <Route path="auth/*" element={<AuthPlaceholder />} />
         
         {/* 学生端路由 */}
         <Route path="student" element={<StudentRouteWrapper />}>
