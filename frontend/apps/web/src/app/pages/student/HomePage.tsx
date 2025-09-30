@@ -328,52 +328,76 @@ const HomePage = () => {
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
         gap: '1rem' 
       }}>
-        <Card 
-          title="🗺️ 关卡地图" 
-          subtitle="查看所有可用关卡"
-          style={{ cursor: 'pointer' }}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('[HomePage] 关卡地图卡片被点击');
-            console.log('[HomePage] 事件对象:', e);
-            console.log('[HomePage] e.defaultPrevented:', e.defaultPrevented);
-            console.log('[HomePage] 准备导航到: /student/levels');
-            console.log('[HomePage] navigate函数:', navigate);
-            
-            try {
-              navigate('/student/levels');
-              console.log('[HomePage] navigate调用成功');
-            } catch (error) {
-              console.error('[HomePage] navigate调用失败:', error);
-            }
-          }}
-        />
+        <Card title="🗺️ 关卡地图" subtitle="查看所有可用关卡">
+          <Button 
+            variant="primary" 
+            style={{ width: '100%' }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('[HomePage] 关卡地图按钮被点击');
+              console.log('[HomePage] 事件对象:', e);
+              console.log('[HomePage] 准备导航到: /student/levels');
+              console.log('[HomePage] navigate函数:', navigate);
+              
+              try {
+                navigate('/student/levels');
+                console.log('[HomePage] navigate调用成功');
+              } catch (error) {
+                console.error('[HomePage] navigate调用失败:', error);
+              }
+            }}
+          >
+            查看地图
+          </Button>
+        </Card>
         
-        <Card 
-          title="🏆 成就收集" 
-          subtitle="查看获得的徽章和装扮"
-          style={{ cursor: 'pointer' }}
-          onClick={(e) => {
-            console.log('[HomePage] 成就收集卡片被点击');
-            console.log('[HomePage] 事件对象:', e);
-            console.log('[HomePage] 准备导航到: /student/achievements');
-            navigate('/student/achievements');
-          }}
-        />
+        <Card title="🏆 成就收集" subtitle="查看获得的徽章和装扮">
+          <Button 
+            variant="primary" 
+            style={{ width: '100%' }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('[HomePage] 成就收集按钮被点击');
+              console.log('[HomePage] 事件对象:', e);
+              console.log('[HomePage] 准备导航到: /student/achievements');
+              
+              try {
+                navigate('/student/achievements');
+                console.log('[HomePage] navigate调用成功');
+              } catch (error) {
+                console.error('[HomePage] navigate调用失败:', error);
+              }
+            }}
+          >
+            查看成就
+          </Button>
+        </Card>
         
         {studentProfile?.sandboxUnlocked && (
-          <Card 
-            title="🛠️ 创作沙盒" 
-            subtitle="创建你自己的关卡"
-            style={{ cursor: 'pointer' }}
-            onClick={(e) => {
-              console.log('[HomePage] 创作沙盒卡片被点击');
-              console.log('[HomePage] 事件对象:', e);
-              console.log('[HomePage] 准备导航到: /student/sandbox');
-              navigate('/student/sandbox');
-            }}
-          />
+          <Card title="🛠️ 创作沙盒" subtitle="创建你自己的关卡">
+            <Button 
+              variant="primary" 
+              style={{ width: '100%' }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[HomePage] 创作沙盒按钮被点击');
+                console.log('[HomePage] 事件对象:', e);
+                console.log('[HomePage] 准备导航到: /student/sandbox');
+                
+                try {
+                  navigate('/student/sandbox');
+                  console.log('[HomePage] navigate调用成功');
+                } catch (error) {
+                  console.error('[HomePage] navigate调用失败:', error);
+                }
+              }}
+            >
+              进入沙盒
+            </Button>
+          </Card>
         )}
       </div>
     </div>
