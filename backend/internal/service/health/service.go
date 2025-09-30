@@ -2,19 +2,19 @@ package health
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 )
 
 // Service provides health and readiness checks.
 type Service struct {
-	db    *sql.DB
+	db    *gorm.DB
 	redis *redis.Client
 }
 
 // New constructs the health service.
-func New(db *sql.DB, redis *redis.Client) *Service {
+func New(db *gorm.DB, redis *redis.Client) *Service {
 	return &Service{db: db, redis: redis}
 }
 
@@ -27,7 +27,11 @@ func (s *Service) Liveness(ctx context.Context) map[string]string {
 func (s *Service) Readiness(ctx context.Context) map[string]string {
 	status := map[string]string{"status": "ready"}
 	if s.db != nil {
-		if err := s.db.PingContext(ctx); err != nil {
+		sqlDB, err := s.db.DB()
+		if err != nil {
+			status["mysql"] = err.Error()
+			status["status"] = "degraded"
+		} else if err := sqlDB.PingContext(ctx); err != nil {
 			status["mysql"] = err.Error()
 			status["status"] = "degraded"
 		} else {

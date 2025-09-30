@@ -72,7 +72,12 @@ func main() {
 	if err != nil {
 		loggr.Fatal("failed to connect to MySQL", zapError(err))
 	}
-	defer db.Close()
+	// Close GORM database connection
+	sqlDB, err := db.DB()
+	if err != nil {
+		loggr.Fatal("failed to get database instance", zapError(err))
+	}
+	defer sqlDB.Close()
 
 	redisClient := cache.NewRedis(cfg.Redis)
 	defer redisClient.Close()
@@ -84,6 +89,10 @@ func main() {
 
 	validate := validator.New()
 
+	// Initialize repositories - commented out for now, services still use in-memory data
+	// repos := mysqlrepo.NewRepositories(db)
+
+	// Services will be refactored to use repositories in the next phase
 	authSvc := authService.New()
 	studentSvc := studentService.New()
 	teacherSvc := teacherService.New()
