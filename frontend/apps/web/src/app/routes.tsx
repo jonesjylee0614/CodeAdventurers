@@ -1,5 +1,5 @@
-import { Suspense, useEffect } from 'react';
-import { Navigate, Outlet, Routes, Route, useLocation } from 'react-router-dom';
+import { lazy } from 'react';
+import { Navigate, Outlet, useRoutes } from 'react-router-dom';
 
 import { AppShell } from './layouts/AppShell';
 import { RoleLayout } from './layouts/RoleLayout';
@@ -7,80 +7,59 @@ import { StudentLayout } from './pages/student/StudentLayout';
 import { TeacherLayout } from './pages/teacher/TeacherLayout';
 import { ParentLayout } from './pages/parent/ParentLayout';
 import { AdminLayout } from './pages/admin/AdminLayout';
-import { Skeleton } from '../components/ui/Skeleton';
 
-// 临时禁用懒加载以排查问题
-import StudentHomePage from './pages/student/HomePage';
-import StudentLevelsPage from './pages/student/LevelsPage';
-import StudentLevelDetailPage from './pages/student/LevelDetailPage';
-import StudentPlayPage from './pages/student/PlayPage';
-import StudentResultPage from './pages/student/ResultPage';
-import StudentAchievementsPage from './pages/student/AchievementsPage';
-import StudentSettingsPage from './pages/student/SettingsPage';
+const StudentHomePage = lazy(() => import('./pages/student/HomePage'));
+const StudentLevelsPage = lazy(() => import('./pages/student/LevelsPage'));
+const StudentLevelDetailPage = lazy(() => import('./pages/student/LevelDetailPage'));
+const StudentPlayPage = lazy(() => import('./pages/student/PlayPage'));
+const StudentResultPage = lazy(() => import('./pages/student/ResultPage'));
+const StudentAchievementsPage = lazy(() => import('./pages/student/AchievementsPage'));
+const StudentSettingsPage = lazy(() => import('./pages/student/SettingsPage'));
 
-import TeacherOverviewPage from './pages/teacher/OverviewPage';
-import TeacherClassesPage from './pages/teacher/ClassesPage';
-import TeacherClassDetailPage from './pages/teacher/ClassDetailPage';
-import TeacherAssignmentsPage from './pages/teacher/AssignmentsPage';
-import TeacherContentPage from './pages/teacher/ContentPage';
-import TeacherAnalyticsPage from './pages/teacher/AnalyticsPage';
+const TeacherOverviewPage = lazy(() => import('./pages/teacher/OverviewPage'));
+const TeacherClassesPage = lazy(() => import('./pages/teacher/ClassesPage'));
+const TeacherClassDetailPage = lazy(() => import('./pages/teacher/ClassDetailPage'));
+const TeacherAssignmentsPage = lazy(() => import('./pages/teacher/AssignmentsPage'));
+const TeacherContentPage = lazy(() => import('./pages/teacher/ContentPage'));
+const TeacherAnalyticsPage = lazy(() => import('./pages/teacher/AnalyticsPage'));
 
-import ParentHomePage from './pages/parent/HomePage';
-import ParentProgressPage from './pages/parent/ProgressPage';
-import ParentSettingsPage from './pages/parent/SettingsPage';
+const ParentHomePage = lazy(() => import('./pages/parent/HomePage'));
+const ParentProgressPage = lazy(() => import('./pages/parent/ProgressPage'));
+const ParentSettingsPage = lazy(() => import('./pages/parent/SettingsPage'));
 
-import AdminOverviewPage from './pages/admin/OverviewPage';
-import AdminUsersPage from './pages/admin/UsersPage';
-import AdminCurriculumPage from './pages/admin/CurriculumPage';
-import AdminOpsPage from './pages/admin/OpsPage';
-import AdminSettingsPage from './pages/admin/SettingsPage';
+const AdminOverviewPage = lazy(() => import('./pages/admin/OverviewPage'));
+const AdminUsersPage = lazy(() => import('./pages/admin/UsersPage'));
+const AdminCurriculumPage = lazy(() => import('./pages/admin/CurriculumPage'));
+const AdminOpsPage = lazy(() => import('./pages/admin/OpsPage'));
+const AdminSettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 
-import AuthPlaceholder from './pages/shared/AuthPage';
-
-const LoadingFallback = () => (
-  <div style={{ padding: '2rem' }}>
-    <Skeleton height={200} />
-    <div style={{ marginTop: '1rem' }}>
-      <Skeleton height={150} />
-    </div>
-  </div>
-);
+const AuthPlaceholder = lazy(() => import('./pages/shared/AuthPage'));
 
 const NotFoundPage = () => (
-  <div role="alert" style={{ padding: '2rem', textAlign: 'center' }}>
-    <h1>404 - 未找到页面</h1>
+  <div role="alert">
+    <h1>未找到页面</h1>
     <p>请检查链接或返回主页。</p>
   </div>
 );
 
-// 学生端路由包装器
-const StudentRouteWrapper = () => {
-  const location = useLocation();
-  
-  useEffect(() => {
-    console.log('[StudentRouteWrapper] 路由变化:', location.pathname);
-  }, [location]);
-  
-  return (
-    <RoleLayout
-      title="学生冒险"
-      description="从地图到挑战再到成就收集的一站式体验"
-      routes={[
-        { to: '/student', label: '首页' },
-        { to: '/student/levels', label: '章节地图' },
-        { to: '/student/achievements', label: '成就' },
-        { to: '/student/settings', label: '设置' },
-      ]}
-    >
-      <StudentLayout>
-        <Outlet />
-      </StudentLayout>
-    </RoleLayout>
-  );
-};
+const StudentRoutes = () => (
+  <RoleLayout
+    title="学生冒险"
+    description="从地图到挑战再到成就收集的一站式体验"
+    routes={[
+      { to: '/student', label: '首页' },
+      { to: '/student/levels', label: '章节地图' },
+      { to: '/student/achievements', label: '成就' },
+      { to: '/student/settings', label: '设置' },
+    ]}
+  >
+    <StudentLayout>
+      <Outlet />
+    </StudentLayout>
+  </RoleLayout>
+);
 
-// 教师端路由包装器
-const TeacherRouteWrapper = () => (
+const TeacherRoutes = () => (
   <RoleLayout
     title="教师指挥台"
     description="班级、作业、内容库与教学分析一体化"
@@ -93,15 +72,12 @@ const TeacherRouteWrapper = () => (
     ]}
   >
     <TeacherLayout>
-      <Suspense fallback={<LoadingFallback />}>
-        <Outlet />
-      </Suspense>
+      <Outlet />
     </TeacherLayout>
   </RoleLayout>
 );
 
-// 家长端路由包装器
-const ParentRouteWrapper = () => (
+const ParentRoutes = () => (
   <RoleLayout
     title="家长关怀"
     description="掌握孩子进度、练习记录与家庭设置"
@@ -112,15 +88,12 @@ const ParentRouteWrapper = () => (
     ]}
   >
     <ParentLayout>
-      <Suspense fallback={<LoadingFallback />}>
-        <Outlet />
-      </Suspense>
+      <Outlet />
     </ParentLayout>
   </RoleLayout>
 );
 
-// 管理端路由包装器
-const AdminRouteWrapper = () => (
+const AdminRoutes = () => (
   <RoleLayout
     title="管理控制台"
     description="站点治理、课程编排与运营配置"
@@ -133,71 +106,66 @@ const AdminRouteWrapper = () => (
     ]}
   >
     <AdminLayout>
-      <Suspense fallback={<LoadingFallback />}>
-        <Outlet />
-      </Suspense>
+      <Outlet />
     </AdminLayout>
   </RoleLayout>
 );
 
-export const AppRoutes = () => {
-  const location = useLocation();
-  
-  console.log('[AppRoutes] 路由组件渲染');
-  
-  useEffect(() => {
-    console.log('[AppRoutes] 路由变化:', location.pathname);
-  }, [location]);
-  
-  return (
-    <Routes>
-      <Route path="/" element={<AppShell><Outlet /></AppShell>}>
-        <Route index element={<Navigate to="/student" replace />} />
-        
-        <Route path="auth/*" element={<AuthPlaceholder />} />
-        
-        {/* 学生端路由 */}
-        <Route path="student" element={<StudentRouteWrapper />}>
-          <Route index element={<StudentHomePage />} />
-          <Route path="levels" element={<StudentLevelsPage />} />
-          <Route path="levels/:levelId" element={<StudentLevelDetailPage />} />
-          <Route path="play/:levelId" element={<StudentPlayPage />} />
-          <Route path="result" element={<StudentResultPage />} />
-          <Route path="achievements" element={<StudentAchievementsPage />} />
-          <Route path="settings" element={<StudentSettingsPage />} />
-        </Route>
-        
-        {/* 教师端路由 */}
-        <Route path="teacher" element={<TeacherRouteWrapper />}>
-          <Route index element={<TeacherOverviewPage />} />
-          <Route path="classes" element={<TeacherClassesPage />} />
-          <Route path="classes/:classId" element={<TeacherClassDetailPage />} />
-          <Route path="assignments" element={<TeacherAssignmentsPage />} />
-          <Route path="content" element={<TeacherContentPage />} />
-          <Route path="analytics" element={<TeacherAnalyticsPage />} />
-        </Route>
-        
-        {/* 家长端路由 */}
-        <Route path="parent" element={<ParentRouteWrapper />}>
-          <Route index element={<ParentHomePage />} />
-          <Route path="progress" element={<ParentProgressPage />} />
-          <Route path="progress/:childId" element={<ParentProgressPage />} />
-          <Route path="settings" element={<ParentSettingsPage />} />
-        </Route>
-        
-        {/* 管理端路由 */}
-        <Route path="admin" element={<AdminRouteWrapper />}>
-          <Route index element={<AdminOverviewPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="curriculum" element={<AdminCurriculumPage />} />
-          <Route path="ops" element={<AdminOpsPage />} />
-          <Route path="settings" element={<AdminSettingsPage />} />
-        </Route>
-        
-        <Route path="*" element={<NotFoundPage />} />
-      </Route>
-    </Routes>
-  );
-};
-
-export default AppRoutes;
+export const AppRoutes = () =>
+  useRoutes([
+    {
+      path: '/',
+      element: <AppShell />,
+      children: [
+        { index: true, element: <Navigate to="/student" replace /> },
+        { path: 'auth/*', element: <AuthPlaceholder /> },
+        {
+          path: 'student',
+          element: <StudentRoutes />,
+          children: [
+            { index: true, element: <StudentHomePage /> },
+            { path: 'levels', element: <StudentLevelsPage /> },
+            { path: 'levels/:levelId', element: <StudentLevelDetailPage /> },
+            { path: 'play/:levelId', element: <StudentPlayPage /> },
+            { path: 'result', element: <StudentResultPage /> },
+            { path: 'achievements', element: <StudentAchievementsPage /> },
+            { path: 'settings', element: <StudentSettingsPage /> },
+          ],
+        },
+        {
+          path: 'teacher',
+          element: <TeacherRoutes />,
+          children: [
+            { index: true, element: <TeacherOverviewPage /> },
+            { path: 'classes', element: <TeacherClassesPage /> },
+            { path: 'classes/:classId', element: <TeacherClassDetailPage /> },
+            { path: 'assignments', element: <TeacherAssignmentsPage /> },
+            { path: 'content', element: <TeacherContentPage /> },
+            { path: 'analytics', element: <TeacherAnalyticsPage /> },
+          ],
+        },
+        {
+          path: 'parent',
+          element: <ParentRoutes />,
+          children: [
+            { index: true, element: <ParentHomePage /> },
+            { path: 'progress', element: <ParentProgressPage /> },
+            { path: 'progress/:childId', element: <ParentProgressPage /> },
+            { path: 'settings', element: <ParentSettingsPage /> },
+          ],
+        },
+        {
+          path: 'admin',
+          element: <AdminRoutes />,
+          children: [
+            { index: true, element: <AdminOverviewPage /> },
+            { path: 'users', element: <AdminUsersPage /> },
+            { path: 'curriculum', element: <AdminCurriculumPage /> },
+            { path: 'ops', element: <AdminOpsPage /> },
+            { path: 'settings', element: <AdminSettingsPage /> },
+          ],
+        },
+      ],
+    },
+    { path: '*', element: <NotFoundPage /> },
+  ]);
