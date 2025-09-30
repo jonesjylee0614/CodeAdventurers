@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Progress } from '../../../components/ui/Progress';
@@ -11,6 +11,10 @@ import { StudentProfile } from '../../../services/api/client';
 
 const HomePage = () => {
   const navigate = useNavigate();
+  
+  // 测试navigate函数
+  console.log('[HomePage] navigate函数类型:', typeof navigate);
+  console.log('[HomePage] navigate函数:', navigate);
   const {
     user,
     chapters,
@@ -329,50 +333,30 @@ const HomePage = () => {
         gap: '1rem' 
       }}>
         <Card title="🗺️ 关卡地图" subtitle="查看所有可用关卡">
-          <Button 
-            variant="primary" 
-            style={{ width: '100%' }}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('[HomePage] 关卡地图按钮被点击');
-              console.log('[HomePage] 事件对象:', e);
-              console.log('[HomePage] 准备导航到: /student/levels');
-              console.log('[HomePage] navigate函数:', navigate);
-              
-              try {
-                navigate('/student/levels');
-                console.log('[HomePage] navigate调用成功');
-              } catch (error) {
-                console.error('[HomePage] navigate调用失败:', error);
-              }
-            }}
-          >
-            查看地图
-          </Button>
+          <Link to="/student/levels" style={{ textDecoration: 'none', width: '100%', display: 'block' }}>
+            <Button 
+              variant="primary" 
+              style={{ width: '100%' }}
+              onClick={(e) => {
+                console.log('[HomePage] 关卡地图按钮被点击');
+                console.log('[HomePage] Link to: /student/levels');
+              }}
+            >
+              查看地图
+            </Button>
+          </Link>
         </Card>
         
         <Card title="🏆 成就收集" subtitle="查看获得的徽章和装扮">
-          <Button 
-            variant="primary" 
-            style={{ width: '100%' }}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              console.log('[HomePage] 成就收集按钮被点击');
-              console.log('[HomePage] 事件对象:', e);
-              console.log('[HomePage] 准备导航到: /student/achievements');
-              
-              try {
-                navigate('/student/achievements');
-                console.log('[HomePage] navigate调用成功');
-              } catch (error) {
-                console.error('[HomePage] navigate调用失败:', error);
-              }
-            }}
-          >
-            查看成就
-          </Button>
+          <Link to="/student/achievements" style={{ textDecoration: 'none', width: '100%', display: 'block' }}>
+            <Button 
+              variant="primary" 
+              style={{ width: '100%' }}
+              onClick={() => console.log('[HomePage] 成就收集按钮被点击')}
+            >
+              查看成就
+            </Button>
+          </Link>
         </Card>
         
         {studentProfile?.sandboxUnlocked && (
