@@ -11,6 +11,8 @@ export const StudentLayout = ({ children }: PropsWithChildren) => {
   const [showAchievementDrawer, setShowAchievementDrawer] = useState(false);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
+  console.log('[StudentLayout] 渲染中，children:', children);
+
   return (
     <div className="student-layout">
       {/* 主要内容区域 - 直接渲染 children，不要包裹在 Tabs 里 */}
