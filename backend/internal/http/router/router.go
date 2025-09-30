@@ -11,6 +11,7 @@ import (
 
 	authHandler "github.com/codeadventurers/api-go/internal/http/handlers/auth"
 	healthHandler "github.com/codeadventurers/api-go/internal/http/handlers/health"
+	parentHandler "github.com/codeadventurers/api-go/internal/http/handlers/parent"
 	studentHandler "github.com/codeadventurers/api-go/internal/http/handlers/student"
 	teacherHandler "github.com/codeadventurers/api-go/internal/http/handlers/teacher"
 	wsHandler "github.com/codeadventurers/api-go/internal/http/handlers/ws"

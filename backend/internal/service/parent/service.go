@@ -11,9 +11,9 @@ import (
 
 // Service exposes parent dashboard capabilities backed by in-memory demo data.
 type Service struct {
-	mu      sync.RWMutex
-	states  map[string]*parentState
-	default string
+	mu              sync.RWMutex
+	states          map[string]*parentState
+	defaultParentID string
 }
 
 type parentState struct {
@@ -44,18 +44,18 @@ type SettingsUpdate struct {
 // Overview aggregates child summaries and parent settings.
 type Overview struct {
 	Children []ChildOverview `json:"children"`
-	Settings Settings       `json:"settings"`
+	Settings Settings        `json:"settings"`
 }
 
 // ChildOverview summarises a child for overview screens.
 type ChildOverview struct {
-	ID               string        `json:"id"`
-	Name             string        `json:"name"`
-	ClassID          string        `json:"classId"`
-	CompletedLevels  int           `json:"completedLevels"`
-	TotalDuration    int           `json:"totalDuration"`
-	LastActiveAt     int64         `json:"lastActiveAt"`
-	WeeklyReport     *WeeklyReport `json:"weeklyReport,omitempty"`
+	ID              string        `json:"id"`
+	Name            string        `json:"name"`
+	ClassID         string        `json:"classId"`
+	CompletedLevels int           `json:"completedLevels"`
+	TotalDuration   int           `json:"totalDuration"`
+	LastActiveAt    int64         `json:"lastActiveAt"`
+	WeeklyReport    *WeeklyReport `json:"weeklyReport,omitempty"`
 }
 
 // ChildSummary is a lightweight representation used in pickers.
@@ -66,12 +66,12 @@ type ChildSummary struct {
 
 // WeeklyReport summarises learning progress for a child.
 type WeeklyReport struct {
-	ChildID          string   `json:"childId"`
-	GeneratedAt      int64    `json:"generatedAt"`
-	Summary          string   `json:"summary"`
-	ConceptsLearned  []string `json:"conceptsLearned"`
-	CommonMistakes   []string `json:"commonMistakes"`
-	Recommendations  []string `json:"recommendations"`
+	ChildID         string   `json:"childId"`
+	GeneratedAt     int64    `json:"generatedAt"`
+	Summary         string   `json:"summary"`
+	ConceptsLearned []string `json:"conceptsLearned"`
+	CommonMistakes  []string `json:"commonMistakes"`
+	Recommendations []string `json:"recommendations"`
 }
 
 // ProgressRecord stores historical completion data for a child.
@@ -159,10 +159,10 @@ func New() *Service {
 
 	return &Service{
 		states: map[string]*parentState{
-			"parent-1":   state,
+			"parent-1":    state,
 			"parent-demo": state,
 		},
-		default: "parent-demo",
+		defaultParentID: "parent-demo",
 	}
 }
 
@@ -280,7 +280,7 @@ func (s *Service) UpdateSettings(ctx context.Context, parentID string, update Se
 func (s *Service) parentState(parentID string) (*parentState, error) {
 	id := parentID
 	if strings.TrimSpace(id) == "" {
-		id = s.default
+		id = s.defaultParentID
 	}
 
 	s.mu.RLock()
@@ -290,7 +290,7 @@ func (s *Service) parentState(parentID string) (*parentState, error) {
 		return state, nil
 	}
 
-	if id != s.default {
+	if id != s.defaultParentID {
 		return nil, ErrParentNotFound
 	}
 
@@ -327,5 +327,3 @@ func dedupeStrings(values []string) []string {
 	}
 	return result
 }
-
-
