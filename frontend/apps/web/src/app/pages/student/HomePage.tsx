@@ -333,10 +333,20 @@ const HomePage = () => {
           subtitle="查看所有可用关卡"
           style={{ cursor: 'pointer' }}
           onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
             console.log('[HomePage] 关卡地图卡片被点击');
             console.log('[HomePage] 事件对象:', e);
+            console.log('[HomePage] e.defaultPrevented:', e.defaultPrevented);
             console.log('[HomePage] 准备导航到: /student/levels');
-            navigate('/student/levels');
+            console.log('[HomePage] navigate函数:', navigate);
+            
+            try {
+              navigate('/student/levels');
+              console.log('[HomePage] navigate调用成功');
+            } catch (error) {
+              console.error('[HomePage] navigate调用失败:', error);
+            }
           }}
         />
         
