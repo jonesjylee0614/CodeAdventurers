@@ -3,8 +3,6 @@ import { useState } from 'react';
 import { Drawer } from '../../../components/ui/Drawer';
 import { Modal } from '../../../components/ui/Modal';
 import { Button } from '../../../components/ui/Button';
-import { Tabs, TabItem } from '../../../components/ui/Tabs';
-import { Badge } from '../../../components/ui/Badge';
 import { useFeatureFlags } from '../../providers/FeatureFlagProvider';
 import './student-layout.css';
 
@@ -15,32 +13,8 @@ export const StudentLayout = ({ children }: PropsWithChildren) => {
 
   return (
     <div className="student-layout">
-      <div className="student-layout__meta">
-        <div>
-          <h2>今日冒险进度</h2>
-          <Badge tone="info">首关目标 ≤ 60s</Badge>
-        </div>
-        <div className="student-layout__meta-actions">
-          <Button variant="secondary" onClick={() => setShowAchievementDrawer(true)}>
-            成就抽屉
-          </Button>
-          <Button variant="ghost" onClick={() => setShowExitConfirm(true)}>
-            退出挑战
-          </Button>
-        </div>
-      </div>
-      <Tabs defaultTab="overview">
-        <TabItem id="overview" title="冒险概览">
-          <div className="student-layout__content">{children}</div>
-        </TabItem>
-        <TabItem id="upcoming" title="下一步提示">
-          <div className="student-layout__hints">
-            <p>Hint 1：先观察目标图形，确定边缘积木。</p>
-            <p>Hint 2：尝试使用循环积木减少重复。</p>
-            <p>Hint 3：使用条件判断来控制方向。</p>
-          </div>
-        </TabItem>
-      </Tabs>
+      {/* 主要内容区域 - 直接渲染 children，不要包裹在 Tabs 里 */}
+      <div className="student-layout__content">{children}</div>
 
       <Drawer
         title="成就与装扮"
