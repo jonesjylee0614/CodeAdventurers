@@ -16,6 +16,10 @@ interface RoleLayoutProps {
 
 export const RoleLayout = ({ title, description, routes, cta, children }: PropsWithChildren<RoleLayoutProps>) => {
   const location = useLocation();
+  
+  console.log('[RoleLayout] 渲染中');
+  console.log('[RoleLayout] location.pathname:', location.pathname);
+  console.log('[RoleLayout] children:', children);
 
   return (
     <div className="role-layout">
@@ -29,7 +33,17 @@ export const RoleLayout = ({ title, description, routes, cta, children }: PropsW
           <ul>
             {routes.map((route) => (
               <li key={route.to}>
-                <NavLink to={route.to} className={({ isActive }) => (isActive ? 'active' : undefined)}>
+                <NavLink 
+                  to={route.to}
+                  end
+                  className={({ isActive }) => {
+                    console.log('[RoleLayout] NavLink', route.to, 'isActive:', isActive);
+                    return isActive ? 'active' : undefined;
+                  }}
+                  onClick={(e) => {
+                    console.log('[RoleLayout] NavLink clicked:', route.to);
+                  }}
+                >
                   {route.label}
                 </NavLink>
               </li>
