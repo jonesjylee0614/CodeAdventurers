@@ -49,7 +49,8 @@ const LevelsPage = () => {
     if (isLoggedIn) {
       loadChapters();
     }
-  }, [isLoggedIn, loadChapters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn]);
 
   // 筛选章节选项
   const chapterOptions = [

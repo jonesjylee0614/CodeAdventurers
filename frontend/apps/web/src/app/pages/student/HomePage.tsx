@@ -47,7 +47,8 @@ const HomePage = () => {
       loadStudentData();
       loadChapters();
     }
-  }, [isLoggedIn, user, loadStudentData, loadChapters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, user?.role]);
 
   // 处理用户数据
   useEffect(() => {

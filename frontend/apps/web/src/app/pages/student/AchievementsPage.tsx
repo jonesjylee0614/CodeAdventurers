@@ -179,7 +179,8 @@ const AchievementsPage = () => {
       loadStudentData();
       loadChapters();
     }
-  }, [isLoggedIn, user, loadStudentData, loadChapters]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, user?.role]);
 
   useEffect(() => {
     if (user && user.role === 'student') {

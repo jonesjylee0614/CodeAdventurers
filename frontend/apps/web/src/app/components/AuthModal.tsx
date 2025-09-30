@@ -158,10 +158,10 @@ export const AuthModal = () => {
                 <div>家长 <strong>parent-1 / parent123</strong></div>
               </div>
               <div className="auth-modal__cta-group">
-                <Button variant="secondary" onClick={() => openAuthModal('guest')}>
+                <Button variant="secondary" onClick={() => setActiveTab('guest')}>
                   先试试看
                 </Button>
-                <Button variant="ghost" onClick={() => openAuthModal('student')}>
+                <Button variant="ghost" onClick={() => setActiveTab('student')}>
                   输入班级邀请码
                 </Button>
               </div>
