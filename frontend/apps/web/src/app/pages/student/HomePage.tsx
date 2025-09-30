@@ -34,9 +34,23 @@ const HomePage = () => {
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
   const [recentLevels, setRecentLevels] = useState<any[]>([]);
 
+  // 调试日志 - 查看状态
+  useEffect(() => {
+    console.log('=== [HomePage] 状态调试 ===');
+    console.log('[HomePage] isLoggedIn:', isLoggedIn);
+    console.log('[HomePage] user:', user);
+    console.log('[HomePage] chapters:', chapters);
+    console.log('[HomePage] loading:', loading);
+    console.log('[HomePage] error:', error);
+    console.log('[HomePage] studentProfile:', studentProfile);
+    console.log('[HomePage] recentLevels:', recentLevels);
+    console.log('========================');
+  }, [isLoggedIn, user, chapters, loading, error, studentProfile, recentLevels]);
+
   // 重定向到登录页面如果未登录
   useEffect(() => {
     if (!isLoggedIn) {
+      console.log('[HomePage] 用户未登录，打开登录窗口');
       openAuthModal('student');
     }
   }, [isLoggedIn, openAuthModal]);
@@ -178,7 +192,12 @@ const HomePage = () => {
           nextLevel ? (
             <Button 
               variant="primary"
-              onClick={() => navigate(`/student/levels/${nextLevel.level}`)}
+              onClick={(e) => {
+                console.log('[HomePage] 进入关卡按钮被点击');
+                console.log('[HomePage] 下一关卡:', nextLevel);
+                console.log('[HomePage] 准备导航到:', `/student/levels/${nextLevel.level}`);
+                navigate(`/student/levels/${nextLevel.level}`);
+              }}
             >
               进入关卡
             </Button>
@@ -270,7 +289,12 @@ const HomePage = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => navigate(`/student/levels/${level.id}`)}
+                    onClick={(e) => {
+                      console.log('[HomePage] 关卡按钮被点击');
+                      console.log('[HomePage] 关卡ID:', level.id);
+                      console.log('[HomePage] 准备导航到:', `/student/levels/${level.id}`);
+                      navigate(`/student/levels/${level.id}`);
+                    }}
                   >
                     {level.status === 'completed' ? '回顾' : '挑战'}
                   </Button>
@@ -285,7 +309,11 @@ const HomePage = () => {
             actions={
               <Button 
                 variant="primary"
-                onClick={() => navigate('/student/levels')}
+                onClick={(e) => {
+                  console.log('[HomePage] 查看关卡地图按钮被点击');
+                  console.log('[HomePage] 准备导航到: /student/levels');
+                  navigate('/student/levels');
+                }}
               >
                 查看关卡地图
               </Button>
@@ -304,14 +332,24 @@ const HomePage = () => {
           title="🗺️ 关卡地图" 
           subtitle="查看所有可用关卡"
           style={{ cursor: 'pointer' }}
-          onClick={() => navigate('/student/levels')}
+          onClick={(e) => {
+            console.log('[HomePage] 关卡地图卡片被点击');
+            console.log('[HomePage] 事件对象:', e);
+            console.log('[HomePage] 准备导航到: /student/levels');
+            navigate('/student/levels');
+          }}
         />
         
         <Card 
           title="🏆 成就收集" 
           subtitle="查看获得的徽章和装扮"
           style={{ cursor: 'pointer' }}
-          onClick={() => navigate('/student/achievements')}
+          onClick={(e) => {
+            console.log('[HomePage] 成就收集卡片被点击');
+            console.log('[HomePage] 事件对象:', e);
+            console.log('[HomePage] 准备导航到: /student/achievements');
+            navigate('/student/achievements');
+          }}
         />
         
         {studentProfile?.sandboxUnlocked && (
@@ -319,7 +357,12 @@ const HomePage = () => {
             title="🛠️ 创作沙盒" 
             subtitle="创建你自己的关卡"
             style={{ cursor: 'pointer' }}
-            onClick={() => navigate('/student/sandbox')}
+            onClick={(e) => {
+              console.log('[HomePage] 创作沙盒卡片被点击');
+              console.log('[HomePage] 事件对象:', e);
+              console.log('[HomePage] 准备导航到: /student/sandbox');
+              navigate('/student/sandbox');
+            }}
           />
         )}
       </div>
