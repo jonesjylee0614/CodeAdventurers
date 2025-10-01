@@ -53,15 +53,10 @@ const HomePage = () => {
     console.log('========================');
   }, [isLoggedIn, user, chapters, loading, error, studentProfile, recentLevels, location.pathname]);
 
-  // 监听路由变化
-  useEffect(() => {
-    console.log('[HomePage] 路由变化:', location.pathname);
-  }, [location.pathname]);
 
   // 重定向到登录页面如果未登录
   useEffect(() => {
     if (!isLoggedIn) {
-      console.log('[HomePage] 用户未登录，打开登录窗口');
       openAuthModal('student');
     }
   }, [isLoggedIn, openAuthModal]);
@@ -86,30 +81,15 @@ const HomePage = () => {
   useEffect(() => {
     if (!studentProfile || chapters.length === 0) return;
 
-    console.log('[HomePage] 计算最近完成的关卡，所有关卡:', chapters.flatMap(chapter => chapter.levels));
     const completedLevels = chapters
       .flatMap(chapter => chapter.levels)
       .filter(level => level.status === 'completed')
       .sort((a, b) => a.name.localeCompare(b.name))
       .slice(0, 5);
 
-    console.log('[HomePage] 已完成的关卡:', completedLevels);
     setRecentLevels(completedLevels);
   }, [studentProfile, chapters]);
 
-  // 调试：检查所有关卡状态
-  useEffect(() => {
-    if (chapters.length > 0) {
-      console.log('[HomePage] === 所有关卡状态调试 ===');
-      chapters.forEach(chapter => {
-        console.log(`[HomePage] 章节 ${chapter.title}:`);
-        chapter.levels.forEach(level => {
-          console.log(`  - ${level.name}: ${level.status} (id: ${level.id})`);
-        });
-      });
-      console.log('[HomePage] =======================');
-    }
-  }, [chapters]);
 
   // 计算整体进度
   const calculateProgress = () => {
@@ -126,10 +106,7 @@ const HomePage = () => {
 
   // 找到下一个可挑战的关卡
   const getNextLevel = () => {
-    console.log('[HomePage] 开始查找下一个关卡');
     for (const chapter of chapters) {
-      console.log('[HomePage] 检查章节:', chapter.title, '关卡数量:', chapter.levels.length);
-
       // 优先找状态为 'unlocked' 的关卡（未完成的）
       let nextLevel = chapter.levels.find(level => level.status === 'unlocked');
 
@@ -139,13 +116,9 @@ const HomePage = () => {
       }
 
       if (nextLevel) {
-        console.log('[HomePage] 找到下一个关卡:', nextLevel);
-        const result = { chapter: chapter.id, level: nextLevel.id, name: nextLevel.name };
-        console.log('[HomePage] 返回结果:', result);
-        return result;
+        return { chapter: chapter.id, level: nextLevel.id, name: nextLevel.name };
       }
     }
-    console.log('[HomePage] 未找到可挑战的关卡');
     return null;
   };
 
@@ -237,40 +210,16 @@ const HomePage = () => {
                 e.preventDefault();
                 e.stopPropagation();
 
-                console.log('[HomePage] 进入关卡按钮被点击');
-                console.log('[HomePage] 下一关卡对象:', nextLevel);
-                console.log('[HomePage] nextLevel.level:', nextLevel.level);
-                console.log('[HomePage] nextLevel.level类型:', typeof nextLevel.level);
-
                 if (!nextLevel || !nextLevel.level) {
                   console.error('[HomePage] nextLevel或nextLevel.level为空!', { nextLevel });
                   return;
                 }
 
                 const targetPath = `/student/play/${nextLevel.level}`;
-                console.log('[HomePage] 准备导航到:', targetPath);
-                console.log('[HomePage] 当前路径:', location.pathname);
+                console.log('[HomePage] 导航到:', targetPath);
 
                 // 使用React Router进行导航
                 navigate(targetPath);
-
-                // 检查导航是否成功
-                setTimeout(() => {
-                  console.log('[HomePage] 导航后检查路径:', location.pathname, '期望路径:', targetPath);
-                  if (location.pathname !== targetPath) {
-                    console.warn('[HomePage] React Router导航似乎失败，当前路径仍为:', location.pathname);
-                    console.warn('[HomePage] 这可能是因为：');
-                    console.warn('  1. PlayPage组件加载失败');
-                    console.warn('  2. 路由配置问题');
-                    console.warn('  3. React Router版本问题');
-
-                    // 临时解决方案：使用window.location进行跳转（会刷新页面）
-                    console.log('[HomePage] 使用备用跳转方法...');
-                    window.location.href = `/#/student/play/${nextLevel.level}`;
-                  } else {
-                    console.log('[HomePage] 导航成功!');
-                  }
-                }, 100);
               }}
             >
               进入关卡

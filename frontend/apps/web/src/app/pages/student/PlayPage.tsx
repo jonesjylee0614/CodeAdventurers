@@ -1,16 +1,14 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Card } from '../../../components/ui/Card';
-import { Button } from '../../../components/ui/Button';
-import { Modal } from '../../../components/ui/Modal';
-import { Badge } from '../../../components/ui/Badge';
-import { Progress } from '../../../components/ui/Progress';
-import { Skeleton } from '../../../components/ui/Skeleton';
-import { useAppStore } from '../../../store/useAppStore';
 import { BlockEditor } from '@student/BlockEditor';
 import { GameCanvas } from '@student/GameCanvas';
-import { Level } from '../../../services/api/client';
-import { apiClient } from '../../../services/api/client';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Badge } from '../../../components/ui/Badge';
+import { Button } from '../../../components/ui/Button';
+import { Card } from '../../../components/ui/Card';
+import { Modal } from '../../../components/ui/Modal';
+import { Skeleton } from '../../../components/ui/Skeleton';
+import { apiClient, Level } from '../../../services/api/client';
+import { useAppStore } from '../../../store/useAppStore';
 
 const BLOCK_LABELS: Record<string, string> = {
   MOVE: '前进',
@@ -117,9 +115,9 @@ const PlayPage = () => {
     }
   };
 
-  const handleRun = async () => {
+  const handleRunButton = async () => {
     if (!level) return;
-    
+
     setIsPlaying(true);
     await runProgram();
     setIsPlaying(false);
@@ -198,8 +196,125 @@ const PlayPage = () => {
     );
   }
 
-  const allowedBlocks = levelPrep?.allowedBlocks ?? level.allowedBlocks;
+  const allowedBlocks = levelPrep?.allowedBlocks ?? level?.allowedBlocks ?? [];
   const victoryCondition = levelPrep?.victoryCondition ?? level.goal;
+
+  // 使用 useCallback 防止无限循环更新 - 这些 hooks 必须始终存在
+  const handleProgramChange = useCallback((program: any[]) => {
+    setProgram(program);
+  }, []);
+
+  const handleRun = useCallback(async (program: any[]) => {
+    setProgram(program);
+    const result = await runProgram(program);
+    return result || { success: false, steps: 0, stars: 0, log: [] };
+  }, [runProgram]);
+
+  const handleResetCallback = useCallback(() => {
+    resetGame();
+    setIsPlaying(false);
+    setStartTime(Date.now());
+  }, [resetGame]);
+
+  const handleGetHintCallback = useCallback(async () => {
+    await getHint();
+    setShowHint(true);
+  }, [getHint]);
+
+  // 提前返回的条件必须放在所有 hooks 之后
+  // 加载状态
+  if (isFetching) {
+    return (
+      <div style={{ display: 'grid', gap: '1.5rem' }}>
+        <Card title="🎯 关卡加载中..." subtitle="请稍候，正在准备游戏场景">
+          <Skeleton height={200} />
+        </Card>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '1.5rem' }}>
+          <Card title="游戏场景">
+            <Skeleton height={400} />
+          </Card>
+          <div style={{ display: 'grid', gap: '1rem' }}>
+            <Skeleton height={120} />
+            <Skeleton height={80} />
+            <Skeleton height={100} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 错误状态
+  if (fetchError) {
+    return (
+      <div style={{ display: 'grid', gap: '1.5rem' }}>
+        <Card title="❌ 关卡加载失败" subtitle="遇到了一个技术问题">
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>😵</div>
+            <h2 style={{ color: '#ef4444', marginBottom: '1rem' }}>糟糕，体验出了点问题</h2>
+            <p style={{ color: '#6b7280', marginBottom: '1.5rem' }}>
+              {fetchError}
+            </p>
+            <p style={{ color: '#6b7280', marginBottom: '2rem' }}>
+              请尝试刷新页面，如果问题持续出现请联系支持团队。
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <Button
+                variant="primary"
+                onClick={() => window.location.reload()}
+              >
+                刷新页面
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => navigate('/student/levels')}
+              >
+                返回关卡地图
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // 未登录状态（理论上不会出现，因为有重定向）
+  if (!isLoggedIn) {
+    return (
+      <div style={{ display: 'grid', gap: '1.5rem' }}>
+        <Card title="🔒 需要登录" subtitle="请先登录以访问关卡">
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <p>请登录后继续游戏</p>
+            <Button onClick={() => openAuthModal('student')}>
+              登录
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  // 检查关卡数据是否存在
+  if (!level) {
+    return (
+      <div style={{ display: 'grid', gap: '1.5rem' }}>
+        <Card title="🔒 关卡未解锁" subtitle="这个关卡需要先完成前面的关卡">
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🔒</div>
+            <h2 style={{ color: '#f59e0b', marginBottom: '1rem' }}>关卡未解锁</h2>
+            <p style={{ color: '#6b7280', marginBottom: '2rem' }}>
+              请先完成前面的关卡，再来挑战这个关卡吧！
+            </p>
+            <Button
+              variant="primary"
+              onClick={() => navigate('/student/levels')}
+            >
+              返回关卡地图
+            </Button>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'grid', gap: '1.5rem' }}>
@@ -207,7 +322,7 @@ const PlayPage = () => {
       <Card
         title={`🎯 ${level.name}`}
         subtitle="编程挑战区 - 使用积木编程完成任务"
-        style={{ 
+        style={{
           background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
           color: 'white'
         }}
@@ -250,12 +365,18 @@ const PlayPage = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '1.5rem', minHeight: '600px' }}>
         {/* 左侧：游戏场景 */}
         <Card title="🎮 游戏场景" style={{ padding: '16px' }}>
-          <GameCanvas
-            level={level}
-            simulationResult={game.simulationResult}
-            isPlaying={isPlaying}
-            playbackSpeed={500}
-          />
+          {level ? (
+            <GameCanvas
+              level={level}
+              simulationResult={game.simulationResult}
+              isPlaying={isPlaying}
+              playbackSpeed={500}
+            />
+          ) : (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+              关卡数据加载中...
+            </div>
+          )}
         </Card>
 
         {/* 右侧：控制面板 */}
@@ -305,26 +426,26 @@ const PlayPage = () => {
             <div style={{ display: 'grid', gap: '8px' }}>
               <Button
                 variant="primary"
-                onClick={handleRun}
+                onClick={handleRunButton}
                 disabled={isPlaying || game.isRunning || game.currentProgram.length === 0}
                 loading={game.isRunning}
                 style={{ width: '100%' }}
               >
                 {game.isRunning ? '运行中...' : '▶️ 运行程序'}
               </Button>
-              
+
               <Button
                 variant="secondary"
-                onClick={handleReset}
+                onClick={handleResetCallback}
                 disabled={isPlaying || game.isRunning}
                 style={{ width: '100%' }}
               >
                 🔄 重置
               </Button>
-              
+
               <Button
                 variant="ghost"
-                onClick={handleGetHint}
+                onClick={handleGetHintCallback}
                 disabled={isPlaying || game.isRunning}
                 style={{ width: '100%' }}
               >
@@ -335,10 +456,10 @@ const PlayPage = () => {
 
           {/* 运行结果 */}
           {game.simulationResult && (
-            <Card 
-              title={game.simulationResult.success ? "🎉 挑战成功！" : "💫 再试试吧"} 
+            <Card
+              title={game.simulationResult.success ? "🎉 挑战成功！" : "💫 再试试吧"}
               size="sm"
-              style={{ 
+              style={{
                 background: game.simulationResult.success ? '#f0fdf4' : '#fef2f2',
                 border: `2px solid ${game.simulationResult.success ? '#16a34a' : '#dc2626'}`
               }}
@@ -401,19 +522,19 @@ const PlayPage = () => {
 
       {/* 积木编程区域 */}
       <Card title="🧩 积木编程区" subtitle="拖拽积木组建你的解决方案">
-        <BlockEditor
-          level={level}
-          allowedBlocks={allowedBlocks}
-          onProgramChange={(program: any[]) => {
-            setProgram(program);
-          }}
-          onRun={async (program: any[]) => {
-            setProgram(program);
-            const result = await runProgram(program);
-            return result || { success: false, steps: 0, stars: 0, log: [] };
-          }}
-          onReset={handleReset}
-        />
+        {level && allowedBlocks ? (
+          <BlockEditor
+            level={level}
+            allowedBlocks={allowedBlocks}
+            onProgramChange={handleProgramChange}
+            onRun={handleRun}
+            onReset={handleResetCallback}
+          />
+        ) : (
+          <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+            积木编程器加载中...
+          </div>
+        )}
       </Card>
 
       {/* 提示弹窗 */}
@@ -453,12 +574,12 @@ const PlayPage = () => {
         title="🎉 挑战完成！"
         open={showResult}
         onClose={() => setShowResult(false)}
-        primaryAction={{ 
-          label: '继续冒险', 
-          onClick: handleContinue 
+        primaryAction={{
+          label: '继续冒险',
+          onClick: handleContinue
         }}
-        secondaryAction={{ 
-          label: '再次挑战', 
+        secondaryAction={{
+          label: '再次挑战',
           onClick: () => {
             setShowResult(false);
             handleReset();

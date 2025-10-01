@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { TabSwitcher, Tab } from '../../components/ui/TabSwitcher';
-import { useAppStore, AuthMode } from '../../store/useAppStore';
+import { Modal } from '../../components/ui/Modal';
+import { Tab, TabSwitcher } from '../../components/ui/TabSwitcher';
+import { AuthMode, useAppStore } from '../../store/useAppStore';
 import './auth-modal.css';
 
 const AUTH_TABS: Tab[] = [
@@ -40,6 +40,7 @@ export const AuthModal = () => {
     isLoggedIn: state.isLoggedIn,
     user: state.user,
   }));
+
 
   const navigate = useNavigate();
 

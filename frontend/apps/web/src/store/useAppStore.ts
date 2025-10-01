@@ -2,12 +2,12 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
   apiClient,
-  StudentProfile,
-  User,
-  Level,
   Chapter,
+  Level,
+  ParentProfile,
+  StudentProfile,
   TeacherProfile,
-  ParentProfile
+  User
 } from '../services/api/client';
 
 export type AuthMode = 'guest' | 'student' | 'teacher' | 'parent';
@@ -31,18 +31,18 @@ export interface AppState {
     isOpen: boolean;
     mode: AuthMode;
   };
-  
+
   // 学生端数据
   chapters: Chapter[];
   currentChapter?: Chapter;
-  
+
   // 游戏状态
   game: GameState;
-  
+
   // UI状态
   loading: boolean;
   error?: string;
-  
+
   // 动作
   setUser: (user: User | StudentProfile | TeacherProfile | ParentProfile) => void;
   logout: () => void;
@@ -51,7 +51,7 @@ export interface AppState {
 
   openAuthModal: (mode?: AuthMode) => void;
   closeAuthModal: () => void;
-  
+
   // 认证动作
   loginAsGuest: (name?: string) => Promise<boolean>;
   joinClass: (inviteCode: string, name: string) => Promise<boolean>;
@@ -60,11 +60,11 @@ export interface AppState {
     password: string;
     role: 'teacher' | 'parent' | 'admin' | 'student';
   }) => Promise<boolean>;
-  
+
   // 学生端动作
   loadStudentData: () => Promise<void>;
   loadChapters: () => Promise<void>;
-  
+
   // 游戏动作
   setCurrentLevel: (level: Level) => void;
   setProgram: (program: any[]) => void;
@@ -145,39 +145,39 @@ export const useAppStore = create<AppState>()(
       },
 
       closeAuthModal: () => {
-		set((state) => ({
-			auth: {
-				...state.auth,
-				isOpen: false,
-			},
-			error: undefined,
-		}));
+        set((state) => ({
+          auth: {
+            ...state.auth,
+            isOpen: false,
+          },
+          error: undefined,
+        }));
       },
 
       // 认证动作
       loginAsGuest: async (name) => {
         set({ loading: true, error: undefined });
-        
+
         try {
           const response = await apiClient.loginAsGuest(name);
-          
+
           if (response.error) {
             set({ error: response.error, loading: false });
             return false;
           }
-          
+
           if (response.data) {
             const user: User = {
               id: response.data.userId,
               name: response.data.name,
               role: response.data.role as any,
             };
-            
+
             get().setUser(user);
             set({ loading: false });
             return true;
           }
-          
+
           return false;
         } catch {
           set({ error: '登录失败', loading: false });
@@ -190,12 +190,12 @@ export const useAppStore = create<AppState>()(
 
         try {
           const response = await apiClient.joinClass(inviteCode, name);
-          
+
           if (response.error) {
             set({ error: response.error, loading: false });
             return false;
           }
-          
+
           if (response.data) {
             const user: User = {
               id: response.data.userId,
@@ -203,14 +203,14 @@ export const useAppStore = create<AppState>()(
               role: 'student',
               classId: response.data.classId,
             };
-            
+
             get().setUser(user);
             set({ loading: false });
             await get().loadStudentData();
             await get().loadChapters();
             return true;
           }
-          
+
           return false;
         } catch (error) {
           set({ error: '加入班级失败', loading: false });
@@ -256,12 +256,12 @@ export const useAppStore = create<AppState>()(
 
         try {
           const response = await apiClient.getStudentProfile();
-          
+
           if (response.error) {
             set({ error: response.error, loading: false });
             return;
           }
-          
+
           if (response.data) {
             set({ user: response.data, loading: false });
           }
@@ -276,12 +276,12 @@ export const useAppStore = create<AppState>()(
 
         try {
           const response = await apiClient.getStudentMap();
-          
+
           if (response.error) {
             set({ error: response.error });
             return;
           }
-          
+
           if (response.data) {
             set({ chapters: response.data.chapters });
           }
@@ -292,25 +292,25 @@ export const useAppStore = create<AppState>()(
 
       // 游戏动作
       setCurrentLevel: (level) => {
-        set({ 
-          game: { 
-            ...get().game, 
+        set({
+          game: {
+            ...get().game,
             currentLevel: level,
             currentProgram: [],
             simulationResult: undefined,
             hints: [],
             attempts: 0,
             lastError: undefined
-          } 
+          }
         });
       },
 
       setProgram: (program) => {
-        set({ 
-          game: { 
-            ...get().game, 
-            currentProgram: program 
-          } 
+        set({
+          game: {
+            ...get().game,
+            currentProgram: program
+          }
         });
       },
 
@@ -379,7 +379,7 @@ export const useAppStore = create<AppState>()(
             ...data,
             replayLog: game.simulationResult.log
           });
-          
+
           if (response.error) {
             set({ error: response.error });
             return;
@@ -401,18 +401,18 @@ export const useAppStore = create<AppState>()(
             attempts: game.attempts,
             lastError: game.lastError
           });
-          
+
           if (response.error) {
             set({ error: response.error });
             return;
           }
-          
+
           if (response.data) {
-            set({ 
-              game: { 
-                ...game, 
-                hints: [...game.hints, response.data.hint] 
-              } 
+            set({
+              game: {
+                ...game,
+                hints: [...game.hints, response.data.hint]
+              }
             });
           }
         } catch (error) {
@@ -422,23 +422,23 @@ export const useAppStore = create<AppState>()(
 
       resetGame: () => {
         const { game } = get();
-        set({ 
-          game: { 
+        set({
+          game: {
             ...game,
             currentProgram: [],
             simulationResult: undefined,
             hints: [],
             attempts: 0,
             lastError: undefined
-          } 
+          }
         });
       },
     }),
     {
       name: 'app-storage',
-      partialize: (state) => ({ 
-        user: state.user, 
-        isLoggedIn: state.isLoggedIn 
+      partialize: (state) => ({
+        user: state.user,
+        isLoggedIn: state.isLoggedIn
       }),
     }
   )
