@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../../../components/ui/Card';
 import { Button } from '../../../components/ui/Button';
 import { Progress } from '../../../components/ui/Progress';
@@ -332,31 +332,62 @@ const HomePage = () => {
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
         gap: '1rem' 
       }}>
-        <Card title="🗺️ 关卡地图" subtitle="查看所有可用关卡">
-          <Link to="/student/levels" style={{ textDecoration: 'none', width: '100%', display: 'block' }}>
-            <Button 
-              variant="primary" 
-              style={{ width: '100%' }}
-              onClick={(e) => {
-                console.log('[HomePage] 关卡地图按钮被点击');
-                console.log('[HomePage] Link to: /student/levels');
-              }}
-            >
-              查看地图
-            </Button>
-          </Link>
+        <Card
+          title="🗺️ 关卡地图"
+          subtitle="查看所有可用关卡"
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            console.log('[HomePage] 关卡地图卡片被点击');
+            navigate('/student/levels');
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              navigate('/student/levels');
+            }
+          }}
+        >
+          <Button
+            variant="primary"
+            style={{ width: '100%' }}
+            onClick={(event) => {
+              event.stopPropagation();
+              console.log('[HomePage] 关卡地图按钮被点击');
+              navigate('/student/levels');
+            }}
+          >
+            查看地图
+          </Button>
         </Card>
-        
-        <Card title="🏆 成就收集" subtitle="查看获得的徽章和装扮">
-          <Link to="/student/achievements" style={{ textDecoration: 'none', width: '100%', display: 'block' }}>
-            <Button 
-              variant="primary" 
-              style={{ width: '100%' }}
-              onClick={() => console.log('[HomePage] 成就收集按钮被点击')}
-            >
-              查看成就
-            </Button>
-          </Link>
+
+        <Card
+          title="🏆 成就收集"
+          subtitle="查看获得的徽章和装扮"
+          role="button"
+          tabIndex={0}
+          onClick={() => {
+            console.log('[HomePage] 成就收集卡片被点击');
+            navigate('/student/achievements');
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              navigate('/student/achievements');
+            }
+          }}
+        >
+          <Button
+            variant="primary"
+            style={{ width: '100%' }}
+            onClick={(event) => {
+              event.stopPropagation();
+              console.log('[HomePage] 成就收集按钮被点击');
+              navigate('/student/achievements');
+            }}
+          >
+            查看成就
+          </Button>
         </Card>
         
         {studentProfile?.sandboxUnlocked && (

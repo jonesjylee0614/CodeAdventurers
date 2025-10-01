@@ -18,11 +18,13 @@ export const Button = ({
   size = 'md',
   loading = false,
   disabled,
+  type = 'button',
   ...rest
 }: PropsWithChildren<ButtonProps>) => (
   <button
     className={clsx('ui-button', `ui-button--${variant}`, `ui-button--${size}`)}
     disabled={loading || disabled}
+    type={type}
     {...rest}
   >
     {loading ? '处理中…' : children}
