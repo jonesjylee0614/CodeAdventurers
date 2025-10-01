@@ -194,13 +194,13 @@ const HomePage = () => {
         subtitle="从上次停下的地方继续你的冒险"
         actions={
           nextLevel ? (
-            <Button 
+            <Button
               variant="primary"
               onClick={(e) => {
                 console.log('[HomePage] 进入关卡按钮被点击');
                 console.log('[HomePage] 下一关卡:', nextLevel);
-                console.log('[HomePage] 准备导航到:', `/student/levels/${nextLevel.level}`);
-                navigate(`/student/levels/${nextLevel.level}`);
+                console.log('[HomePage] 准备导航到:', `/student/play/${nextLevel.level}`);
+                navigate(`/student/play/${nextLevel.level}`);
               }}
             >
               进入关卡
