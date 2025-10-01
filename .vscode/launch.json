@@ -1,0 +1,73 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Frontend (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/frontend",
+      "sourceMaps": true,
+      "preLaunchTask": "frontend:dev"
+    },
+    {
+      "name": "Launch Frontend (Edge)",
+      "type": "msedge",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/frontend",
+      "sourceMaps": true,
+      "preLaunchTask": "frontend:dev"
+    },
+    {
+      "name": "Attach to Frontend",
+      "type": "chrome",
+      "request": "attach",
+      "port": 9222,
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/frontend",
+      "sourceMaps": true
+    },
+    {
+      "name": "Launch Go Backend",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/backend/cmd/api",
+      "env": {
+        "GO_ENV": "development"
+      },
+      "args": [],
+      "showLog": true,
+      "preLaunchTask": "backend:build"
+    },
+    {
+      "name": "Debug Go Backend",
+      "type": "go",
+      "request": "attach",
+      "mode": "local",
+      "processId": 0
+    },
+    {
+      "name": "Launch Full Stack",
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Frontend & Backend",
+      "presentation": {
+        "group": "1",
+        "order": 1
+      },
+      "compound": "fullstack"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "fullstack",
+      "configurations": [
+        "Launch Go Backend",
+        "Launch Frontend (Chrome)"
+      ],
+      "preLaunchTask": "fullstack:install-deps"
+    }
+  ]
+}

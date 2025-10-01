@@ -1,0 +1,61 @@
+{
+    "go.toolsManagement.checkForUpdates": "local",
+    "go.useLanguageServer": true,
+    "go.formatTool": "gofmt",
+    "go.lintTool": "golint",
+    "go.vetOnSave": "package",
+    "go.formatOnSave": true,
+    "go.lintOnSave": "package",
+    "go.buildOnSave": "package",
+    "go.testOnSave": false,
+    "go.coverOnSave": false,
+    "go.gocodeAutoBuild": false,
+    "typescript.preferences.importModuleSpecifier": "relative",
+    "typescript.suggest.autoImports": true,
+    "javascript.suggest.autoImports": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit",
+        "source.organizeImports": "explicit"
+    },
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
+    ],
+    "files.associations": {
+        "*.css": "css",
+        "*.scss": "scss",
+        "*.tsx": "typescriptreact",
+        "*.ts": "typescript"
+    },
+    "emmet.includeLanguages": {
+        "typescript": "typescriptreact",
+        "javascript": "javascriptreact"
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/*.code-search": true,
+        "**/dist": true,
+        "**/build": true,
+        "**/.git": true,
+        "**/.vscode": false,
+        "**/coverage": true,
+        "**/.nyc_output": true
+    },
+    "files.exclude": {
+        "**/node_modules": true,
+        "**/dist": true,
+        "**/build": true,
+        "**/.git": true,
+        "**/.vscode": false,
+        "**/coverage": true,
+        "**/.nyc_output": true
+    },
+    "git.autofetch": true,
+    "git.enableSmartCommit": true,
+    "debug.javascript.autoAttachFilter": "onlyWithFlag",
+    "debug.node.autoAttach": "on"
+}

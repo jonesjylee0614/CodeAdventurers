@@ -1,0 +1,47 @@
+{
+    "recommendations": [
+        // Go 开发
+        "golang.go",
+        // 前端开发
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint",
+        "ms-vscode.vscode-json",
+        // React 开发
+        "ms-vscode.vscode-react-typescript",
+        // 调试和工具
+        "ms-vscode.vscode-chrome-debug-core",
+        "ms-vscode.vscode-edge-debug2",
+        "ms-vscode.vscode-node-debug2",
+        "ms-vscode.vscode-node-debug3",
+        // 通用工具
+        "ms-vscode.vscode-git-graph",
+        "ms-vscode.vscode-docker",
+        "ms-vscode.vscode-yaml",
+        "ms-vscode.vscode-markdown-notebook",
+        // 代码质量
+        "ms-vscode.vscode-codespaces",
+        "ms-vscode.vscode-github-issues-prs",
+        // 格式化和美化
+        "ms-vscode.vscode-css-peek",
+        "ms-vscode.vscode-html-css",
+        // 测试
+        "ms-vscode.vscode-jest",
+        "ms-vscode.test-adapter-converter",
+        // 数据库和API
+        "ms-vscode.vscode-mysql-client2",
+        "ms-vscode.vscode-rest-client",
+        // 其他有用的扩展
+        "ms-vscode.vscode-env",
+        "ms-vscode.vscode-todo-highlight",
+        "ms-vscode.vscode-path-intellisense",
+        "ms-vscode.vscode-fileutils",
+        // 图标主题
+        "ms-vscode.vscode-icons"
+    ],
+    "unwantedRecommendations": [
+        "ms-vscode.vscode-typescript",
+        "hookyqr.beautify"
+    ]
+}
