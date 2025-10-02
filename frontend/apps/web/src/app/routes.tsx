@@ -39,7 +39,7 @@ const AdminOpsPage = lazy(() => import('./pages/admin/OpsPage'));
 const AdminSettingsPage = lazy(() => import('./pages/admin/SettingsPage'));
 
 // Auth页面
-const AuthPlaceholder = lazy(() => import('./pages/shared/AuthPage'));
+const LoginPage = lazy(() => import('./pages/shared/LoginPage'));
 
 // Loading组件
 const PageLoader = () => (
@@ -67,14 +67,18 @@ export const AppRoutes = () => {
   console.log('[AppRoutes-Simple] 渲染');
   
   return (
-    <AppShell>
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          {/* 根路径重定向到学生端 */}
-          <Route path="/" element={<Navigate to="/student" replace />} />
-          
-          {/* Auth路由 */}
-          <Route path="/auth/*" element={<AuthPlaceholder />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* 根路径重定向到学生端 */}
+        <Route path="/" element={<Navigate to="/student" replace />} />
+        
+        {/* Auth路由 - 不使用 AppShell */}
+        <Route path="/login" element={<LoginPage />} />
+        
+        {/* 其他路由使用 AppShell */}
+        <Route path="*" element={
+          <AppShell>
+            <Routes>
           
           {/* 学生端路由 - 平铺结构，不嵌套 */}
           <Route path="/student" element={<StudentHomePage />} />
@@ -106,11 +110,13 @@ export const AppRoutes = () => {
           <Route path="/admin/ops" element={<AdminOpsPage />} />
           <Route path="/admin/settings" element={<AdminSettingsPage />} />
           
-          {/* 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
-    </AppShell>
+              {/* 404 */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AppShell>
+        } />
+      </Routes>
+    </Suspense>
   );
 };
 

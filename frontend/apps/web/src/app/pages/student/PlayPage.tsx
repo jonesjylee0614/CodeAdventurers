@@ -63,9 +63,10 @@ const PlayPage = () => {
   // 重定向到登录页面如果未登录
   useEffect(() => {
     if (!isLoggedIn) {
-      openAuthModal('student');
+      const currentPath = window.location.pathname;
+      navigate(`/login?redirect=${encodeURIComponent(currentPath)}`, { replace: true });
     }
-  }, [isLoggedIn, openAuthModal]);
+  }, [isLoggedIn, navigate]);
 
   // 加载关卡数据
   useEffect(() => {
@@ -155,60 +156,16 @@ const PlayPage = () => {
     navigate('/student/levels');
   };
 
-  if (fetchError) {
-    return (
-      <Card title="加载失败">
-        <p style={{ color: '#ef4444', marginBottom: '16px' }}>{fetchError}</p>
-        <Button onClick={loadLevelData}>重新加载</Button>
-      </Card>
-    );
-  }
-
-  if (loading || isFetching) {
-    return (
-      <div style={{ display: 'grid', gap: '1.5rem' }}>
-        <Skeleton height={400} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-          <Skeleton height={200} />
-          <Skeleton height={200} />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card title="加载失败">
-        <p style={{ color: '#ef4444' }}>{error}</p>
-        <Button onClick={() => window.location.reload()}>重新加载</Button>
-      </Card>
-    );
-  }
-
-  if (levelStatus === 'locked' || !level) {
-    return (
-      <Card title="关卡未解锁" subtitle="请先完成前置关卡">
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
-          你还没有解锁此挑战。返回冒险地图完成前置关卡即可开启。
-        </p>
-        <Button onClick={() => navigate('/student/levels')}>返回章节地图</Button>
-      </Card>
-    );
-  }
-
-  const allowedBlocks = levelPrep?.allowedBlocks ?? level?.allowedBlocks ?? [];
-  const victoryCondition = levelPrep?.victoryCondition ?? level.goal;
-
   // 使用 useCallback 防止无限循环更新 - 这些 hooks 必须始终存在
   const handleProgramChange = useCallback((program: any[]) => {
     setProgram(program);
-  }, []);
+  }, [setProgram]);
 
   const handleRun = useCallback(async (program: any[]) => {
     setProgram(program);
     const result = await runProgram(program);
     return result || { success: false, steps: 0, stars: 0, log: [] };
-  }, [runProgram]);
+  }, [runProgram, setProgram]);
 
   const handleResetCallback = useCallback(() => {
     resetGame();
@@ -220,6 +177,10 @@ const PlayPage = () => {
     await getHint();
     setShowHint(true);
   }, [getHint]);
+
+  // 计算派生状态 - 必须在所有 hooks 之后
+  const allowedBlocks = levelPrep?.allowedBlocks ?? level?.allowedBlocks ?? [];
+  const victoryCondition = levelPrep?.victoryCondition ?? level?.goal;
 
   // 提前返回的条件必须放在所有 hooks 之后
   // 加载状态

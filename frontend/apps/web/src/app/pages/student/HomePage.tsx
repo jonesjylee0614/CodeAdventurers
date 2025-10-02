@@ -57,9 +57,9 @@ const HomePage = () => {
   // 重定向到登录页面如果未登录
   useEffect(() => {
     if (!isLoggedIn) {
-      openAuthModal('student');
+      navigate('/login?redirect=/student', { replace: true });
     }
-  }, [isLoggedIn, openAuthModal]);
+  }, [isLoggedIn, navigate]);
 
   // 加载学生数据
   useEffect(() => {
@@ -171,7 +171,7 @@ const HomePage = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
           <div style={{ fontSize: '3rem' }}>
-            {studentProfile?.avatar.equipped === 'starter-cape' ? '🧑‍💻' : '👑'}
+            {studentProfile?.avatar?.equipped === 'starter-cape' ? '🧑‍💻' : '👑'}
           </div>
           <div>
             <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '4px' }}>
