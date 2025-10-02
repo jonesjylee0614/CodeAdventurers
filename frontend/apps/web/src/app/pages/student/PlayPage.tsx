@@ -31,6 +31,7 @@ const PlayPage = () => {
   const [levelPrep, setLevelPrep] = useState<any>(null);
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [isPlaying, setIsPlaying] = useState(false);
+  const [editorResetTick, setEditorResetTick] = useState(0);
   const [isFetching, setIsFetching] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -116,6 +117,14 @@ const PlayPage = () => {
     }
   };
 
+  const performReset = useCallback(() => {
+    resetGame();
+    setProgram([]);
+    setIsPlaying(false);
+    setStartTime(Date.now());
+    setEditorResetTick((tick) => tick + 1);
+  }, [resetGame, setProgram]);
+
   const handleRunButton = async () => {
     if (!level) return;
 
@@ -125,9 +134,7 @@ const PlayPage = () => {
   };
 
   const handleReset = () => {
-    resetGame();
-    setIsPlaying(false);
-    setStartTime(Date.now());
+    performReset();
   };
 
   const handleGetHint = async () => {
@@ -168,10 +175,8 @@ const PlayPage = () => {
   }, [runProgram, setProgram]);
 
   const handleResetCallback = useCallback(() => {
-    resetGame();
-    setIsPlaying(false);
-    setStartTime(Date.now());
-  }, [resetGame]);
+    performReset();
+  }, [performReset]);
 
   const handleGetHintCallback = useCallback(async () => {
     await getHint();
@@ -181,6 +186,31 @@ const PlayPage = () => {
   // 计算派生状态 - 必须在所有 hooks 之后
   const allowedBlocks = levelPrep?.allowedBlocks ?? level?.allowedBlocks ?? [];
   const victoryCondition = levelPrep?.victoryCondition ?? level?.goal;
+
+  const stepLimit =
+    typeof victoryCondition?.stepLimit === 'number' ? victoryCondition.stepLimit : undefined;
+  const currentProgramSteps = game.currentProgram?.length ?? 0;
+  const lastRunSteps = game.simulationResult?.steps ?? null;
+  const displayedSteps = lastRunSteps ?? currentProgramSteps;
+  const isOverStepLimit = stepLimit !== undefined && displayedSteps > stepLimit;
+  const remainingSteps = stepLimit !== undefined ? Math.max(stepLimit - displayedSteps, 0) : null;
+  const stepBadgeTone = isOverStepLimit
+    ? 'danger'
+    : remainingSteps !== null && remainingSteps <= 2
+      ? 'warning'
+      : 'info';
+  const stepBadgeText = stepLimit !== undefined
+    ? isOverStepLimit
+      ? `超出限制 ${displayedSteps - stepLimit} 步（上限 ${stepLimit} 步）`
+      : `剩余 ${remainingSteps} 步（上限 ${stepLimit} 步）`
+    : '';
+  const starCount = game.simulationResult?.stars ?? 0;
+  const maxStars = 3;
+  const starBadgeTone = starCount >= maxStars ? 'success' : starCount > 0 ? 'info' : 'warning';
+  const bestStepDifference =
+    level && game.simulationResult?.steps !== undefined
+      ? Math.max(game.simulationResult.steps - level.bestSteps, 0)
+      : null;
 
   // 提前返回的条件必须放在所有 hooks 之后
   // 加载状态
@@ -288,22 +318,31 @@ const PlayPage = () => {
           color: 'white'
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
-          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px 12px', borderRadius: '8px' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginTop: '16px',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}
+        >
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ background: 'rgba(255,255,255,0.18)', padding: '8px 12px', borderRadius: '8px' }}>
               <div style={{ fontSize: '14px', opacity: 0.9 }}>最佳步数</div>
               <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{level.bestSteps}</div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px 12px', borderRadius: '8px' }}>
+            <div style={{ background: 'rgba(255,255,255,0.18)', padding: '8px 12px', borderRadius: '8px' }}>
               <div style={{ fontSize: '14px', opacity: 0.9 }}>尝试次数</div>
               <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{game.attempts}</div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px 12px', borderRadius: '8px' }}>
+            <div style={{ background: 'rgba(255,255,255,0.18)', padding: '8px 12px', borderRadius: '8px' }}>
               <div style={{ fontSize: '14px', opacity: 0.9 }}>提示次数</div>
               <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{game.hints.length}</div>
             </div>
             {levelProgress && (
-              <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px 12px', borderRadius: '8px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.18)', padding: '8px 12px', borderRadius: '8px' }}>
                 <div style={{ fontSize: '14px', opacity: 0.9 }}>历史最佳</div>
                 <div style={{ fontSize: '18px', fontWeight: 'bold' }}>{levelProgress.steps} 步</div>
               </div>
@@ -322,45 +361,94 @@ const PlayPage = () => {
         </div>
       </Card>
 
-      {/* 主要游戏界面 */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '1.5rem', minHeight: '600px' }}>
-        {/* 左侧：游戏场景 */}
-        <Card title="🎮 游戏场景" style={{ padding: '16px' }}>
-          {level ? (
-            <GameCanvas
-              level={level}
-              simulationResult={game.simulationResult}
-              isPlaying={isPlaying}
-              playbackSpeed={500}
-            />
+      <div
+        style={{
+          display: 'grid',
+          gap: '1.5rem',
+          gridTemplateColumns: 'minmax(360px, 1.15fr) minmax(420px, 1fr) 320px',
+          alignItems: 'start'
+        }}
+      >
+        <Card
+          title="🧩 积木编程区"
+          subtitle="拖拽积木，构建你的指令序列"
+          style={{ height: '100%' }}
+        >
+          {level && allowedBlocks ? (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <BlockEditor
+                level={level}
+                allowedBlocks={allowedBlocks}
+                onProgramChange={handleProgramChange}
+                onRun={handleRun}
+                onReset={handleResetCallback}
+                showRunControls={false}
+                externalResetSignal={editorResetTick}
+              />
+            </div>
           ) : (
             <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-              关卡数据加载中...
+              积木编程器加载中...
             </div>
           )}
         </Card>
 
-        {/* 右侧：控制面板 */}
+        <div style={{ display: 'grid', gap: '1.5rem' }}>
+          <Card title="🎮 游戏场景" style={{ padding: '16px', height: '100%' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '12px',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '12px'
+              }}
+            >
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                {stepLimit !== undefined && (
+                  <Badge tone={stepBadgeTone}>🕒 {stepBadgeText}</Badge>
+                )}
+                <Badge tone={isOverStepLimit ? 'danger' : 'info'}>🚗 程序长度 {displayedSteps} 步</Badge>
+              </div>
+              <Badge tone={starBadgeTone}>
+                ⭐ 目标 {maxStars} 星{starCount ? ` · 已获 ${starCount} 星` : ' · 尚未获得星星'}
+              </Badge>
+            </div>
+            {level ? (
+              <GameCanvas
+                level={level}
+                simulationResult={game.simulationResult}
+                isPlaying={isPlaying}
+                playbackSpeed={500}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                关卡数据加载中...
+              </div>
+            )}
+          </Card>
+        </div>
+
         <div style={{ display: 'grid', gap: '1rem', alignContent: 'start' }}>
-          {/* 目标说明 */}
           <Card title="🎯 任务目标" size="sm">
-            <div style={{ fontSize: '14px', color: '#374151' }}>
+            <div style={{ fontSize: '14px', color: '#374151', display: 'grid', gap: '6px' }}>
               {victoryCondition?.reach && (
-                <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>🏁</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '18px' }}>🚩</span>
                   <span>到达位置 ({victoryCondition.reach.x}, {victoryCondition.reach.y})</span>
                 </div>
               )}
               {victoryCondition?.collectibles !== undefined && (
-                <div style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>⭐</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '18px' }}>⭐</span>
                   <span>收集所有宝石</span>
                 </div>
               )}
-              {victoryCondition?.stepLimit && (
+              {stepLimit !== undefined && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>⚡</span>
-                  <span>在 {victoryCondition.stepLimit} 步内完成</span>
+                  <span style={{ fontSize: '18px' }}>🕒</span>
+                  <span>在 {stepLimit} 步内完成</span>
                 </div>
               )}
             </div>
@@ -376,19 +464,43 @@ const PlayPage = () => {
             </Card>
           )}
 
-          {level.comic && (
-            <Card title="📖 教学漫画" size="sm" style={{ background: '#f5f3ff' }}>
-              <p style={{ margin: 0, color: '#4c1d95', lineHeight: 1.6 }}>{level.comic}</p>
-            </Card>
-          )}
+          <Card title="📈 学习数据" size="sm">
+            <div style={{ display: 'grid', gap: '8px', fontSize: '14px', color: '#374151' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>历史最佳</span>
+                <strong>{levelProgress ? `${levelProgress.steps} 步` : '暂无记录'}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>当前方案</span>
+                <strong>{displayedSteps} 步</strong>
+              </div>
+              {stepLimit !== undefined && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>步数状态</span>
+                  <strong style={{ color: isOverStepLimit ? '#dc2626' : '#0f766e' }}>
+                    {isOverStepLimit
+                      ? `超出 ${displayedSteps - stepLimit} 步`
+                      : `剩余 ${remainingSteps} 步`}
+                  </strong>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>已尝试次数</span>
+                <strong>{game.attempts}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>使用提示</span>
+                <strong>{game.hints.length}</strong>
+              </div>
+            </div>
+          </Card>
 
-          {/* 操作按钮 */}
-          <Card title="🎮 游戏控制" size="sm">
+          <Card title="🕹️ 运行控制" size="sm">
             <div style={{ display: 'grid', gap: '8px' }}>
               <Button
                 variant="primary"
                 onClick={handleRunButton}
-                disabled={isPlaying || game.isRunning || game.currentProgram.length === 0}
+                disabled={isPlaying || game.isRunning || currentProgramSteps === 0}
                 loading={game.isRunning}
                 style={{ width: '100%' }}
               >
@@ -415,10 +527,9 @@ const PlayPage = () => {
             </div>
           </Card>
 
-          {/* 运行结果 */}
           {game.simulationResult && (
             <Card
-              title={game.simulationResult.success ? "🎉 挑战成功！" : "💫 再试试吧"}
+              title={game.simulationResult.success ? '🎉 挑战成功！' : '💫 再试试吧'}
               size="sm"
               style={{
                 background: game.simulationResult.success ? '#f0fdf4' : '#fef2f2',
@@ -439,9 +550,9 @@ const PlayPage = () => {
                     <div style={{ fontSize: '14px', color: '#374151' }}>
                       用时 {game.simulationResult.steps} 步
                     </div>
-                    {game.simulationResult.steps > level.bestSteps && (
+                    {bestStepDifference !== null && bestStepDifference > 0 && (
                       <div style={{ fontSize: '14px', color: '#f59e0b' }}>
-                        比最佳方案多 {game.simulationResult.steps - level.bestSteps} 步
+                        比最佳方案多 {bestStepDifference} 步
                       </div>
                     )}
                   </div>
@@ -470,9 +581,8 @@ const PlayPage = () => {
             </Card>
           )}
 
-          {/* 提示信息 */}
           {game.hints.length > 0 && (
-            <Card title="💡 提示" size="sm" style={{ background: '#fefce8' }}>
+            <Card title="💡 最新提示" size="sm" style={{ background: '#fefce8' }}>
               <div style={{ fontSize: '14px', color: '#92400e' }}>
                 {game.hints[game.hints.length - 1]}
               </div>
@@ -481,22 +591,44 @@ const PlayPage = () => {
         </div>
       </div>
 
-      {/* 积木编程区域 */}
-      <Card title="🧩 积木编程区" subtitle="拖拽积木组建你的解决方案">
-        {level && allowedBlocks ? (
-          <BlockEditor
-            level={level}
-            allowedBlocks={allowedBlocks}
-            onProgramChange={handleProgramChange}
-            onRun={handleRun}
-            onReset={handleResetCallback}
-          />
-        ) : (
-          <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
-            积木编程器加载中...
-          </div>
-        )}
-      </Card>
+      {(level.hints?.length ?? 0) > 0 || level.comic || level.rewards?.outfit ? (
+        <div
+          style={{
+            display: 'grid',
+            gap: '1.5rem',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))'
+          }}
+        >
+          {level.hints && level.hints.length > 0 && (
+            <Card title="🧠 学习提示" size="sm">
+              <ol style={{ margin: 0, paddingLeft: '20px', color: '#374151', lineHeight: 1.6 }}>
+                {level.hints.map((hint, index) => (
+                  <li key={index}>{hint}</li>
+                ))}
+              </ol>
+            </Card>
+          )}
+
+          {level.comic && (
+            <Card title="📖 教学漫画" size="sm" style={{ background: '#f5f3ff' }}>
+              <p style={{ margin: 0, color: '#4c1d95', lineHeight: 1.6 }}>{level.comic}</p>
+            </Card>
+          )}
+
+          {level.rewards?.outfit && (
+            <Card title="🏅 成就奖励" size="sm" style={{ background: '#ecfeff' }}>
+              <div style={{ color: '#0f172a', fontSize: '14px' }}>解锁新装扮：{level.rewards.outfit}</div>
+              {bestStepDifference !== null && (
+                <p style={{ margin: '8px 0 0', color: '#0369a1', fontSize: '13px' }}>
+                  {bestStepDifference > 0
+                    ? `再优化 ${bestStepDifference} 步即可追平最佳记录`
+                    : '已经追平或超越了最佳记录，太棒了！'}
+                </p>
+              )}
+            </Card>
+          )}
+        </div>
+      ) : null}
 
       {/* 提示弹窗 */}
       <Modal
