@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -81,8 +81,13 @@ export const AuthModal = () => {
     }
   }, [error]);
 
+  const previousLoginState = useRef(isLoggedIn);
+
   useEffect(() => {
-    if (isLoggedIn && user) {
+    const wasLoggedIn = previousLoginState.current;
+    previousLoginState.current = isLoggedIn;
+
+    if (!wasLoggedIn && isLoggedIn && user) {
       navigate(`/${user.role}`, { replace: true });
     }
   }, [isLoggedIn, user, navigate]);
