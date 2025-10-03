@@ -11,6 +11,9 @@ interface GameCanvasProps {
   simulationResult?: SimulationResult;
   isPlaying?: boolean;
   playbackSpeed?: number;
+  playbackStep?: number;
+  onStepChange?: (step: number) => void;
+  onPlaybackComplete?: () => void;
 }
 
 interface Position {
@@ -19,14 +22,17 @@ interface Position {
   facing: Direction;
 }
 
-export const GameCanvas: React.FC<GameCanvasProps> = ({ 
-  level, 
-  simulationResult, 
+export const GameCanvas: React.FC<GameCanvasProps> = ({
+  level,
+  simulationResult,
   isPlaying = false,
-  playbackSpeed = 500 
+  playbackSpeed = 500,
+  playbackStep,
+  onStepChange,
+  onPlaybackComplete
 }) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
-  const [currentStep, setCurrentStep] = React.useState(0);
+  const [currentStep, setCurrentStep] = React.useState(-1);
   const [playerPosition, setPlayerPosition] = React.useState<Position>({
     x: level.start.x,
     y: level.start.y,
@@ -34,9 +40,37 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
   });
   const [collectedItems, setCollectedItems] = React.useState<Set<string>>(new Set());
 
+  const totalSteps = simulationResult?.log.length ?? 0;
+
   const CELL_SIZE = 60;
   const CANVAS_WIDTH = level.width * CELL_SIZE;
   const CANVAS_HEIGHT = level.height * CELL_SIZE;
+
+  const computeCollected = React.useCallback((stepIndex: number) => {
+    if (!simulationResult || stepIndex < 0) {
+      return new Set<string>();
+    }
+
+    const collected = new Set<string>();
+    const log = simulationResult.log;
+
+    for (let i = 0; i <= stepIndex && i < log.length; i++) {
+      const step = log[i];
+      if (step.instruction.type === 'collect') {
+        const collectible = level.tiles.find(
+          tile => tile.x === step.position.x &&
+                  tile.y === step.position.y &&
+                  tile.collectible
+        );
+
+        if (collectible) {
+          collected.add(`${collectible.x}:${collectible.y}:${collectible.collectible}`);
+        }
+      }
+    }
+
+    return collected;
+  }, [simulationResult, level.tiles]);
 
   // 绘制游戏场景
   const drawScene = React.useCallback((ctx: CanvasRenderingContext2D, position: Position, collected: Set<string>) => {
@@ -147,14 +181,18 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       ctx.lineWidth = 3;
       ctx.setLineDash([5, 5]);
       ctx.globalAlpha = 0.6;
-      
+
       ctx.beginPath();
       ctx.moveTo(
         level.start.x * CELL_SIZE + CELL_SIZE / 2,
         level.start.y * CELL_SIZE + CELL_SIZE / 2
       );
-      
-      simulationResult.log.slice(0, currentStep + 1).forEach(step => {
+
+      const visibleSteps = currentStep < 0
+        ? []
+        : simulationResult.log.slice(0, currentStep + 1);
+
+      visibleSteps.forEach(step => {
         ctx.lineTo(
           step.position.x * CELL_SIZE + CELL_SIZE / 2,
           step.position.y * CELL_SIZE + CELL_SIZE / 2
@@ -173,47 +211,31 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
       return;
     }
 
+    if (currentStep >= simulationResult.log.length - 1) {
+      onPlaybackComplete?.();
+      return;
+    }
+
     const interval = setInterval(() => {
       setCurrentStep(prev => {
         if (prev >= simulationResult.log.length - 1) {
           clearInterval(interval);
-          return prev;
+          onPlaybackComplete?.();
+          return simulationResult.log.length - 1;
         }
-        
-        const nextStep = simulationResult.log[prev + 1];
-        setPlayerPosition(nextStep.position);
-        
-        // 处理收集动作
-        if (nextStep.instruction.type === 'collect') {
-          const collectible = level.tiles.find(
-            tile => tile.x === nextStep.position.x && 
-                   tile.y === nextStep.position.y && 
-                   tile.collectible
-          );
-          if (collectible) {
-            setCollectedItems(prev => new Set(prev).add(
-              `${collectible.x}:${collectible.y}:${collectible.collectible}`
-            ));
-          }
+
+        const next = prev + 1;
+        const step = simulationResult.log[next];
+        if (step) {
+          setPlayerPosition(step.position);
+          setCollectedItems(computeCollected(next));
         }
-        
-        return prev + 1;
+        return next;
       });
     }, playbackSpeed);
 
     return () => clearInterval(interval);
-  }, [isPlaying, simulationResult, playbackSpeed, level.tiles]);
-
-  // 重置到初始状态
-  const resetToStart = React.useCallback(() => {
-    setCurrentStep(0);
-    setPlayerPosition({
-      x: level.start.x,
-      y: level.start.y,
-      facing: level.start.facing
-    });
-    setCollectedItems(new Set());
-  }, [level.start]);
+  }, [isPlaying, simulationResult, playbackSpeed, computeCollected, onPlaybackComplete, currentStep]);
 
   // 绘制场景
   React.useEffect(() => {
@@ -226,10 +248,40 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
     drawScene(ctx, playerPosition, collectedItems);
   }, [drawScene, playerPosition, collectedItems]);
 
-  // 当关卡改变时重置
+  // 同步外部步数控制
   React.useEffect(() => {
-    resetToStart();
-  }, [level, resetToStart]);
+    if (typeof playbackStep === 'number' && playbackStep !== currentStep) {
+      if (playbackStep < 0) {
+        setPlayerPosition({
+          x: level.start.x,
+          y: level.start.y,
+          facing: level.start.facing
+        });
+        setCollectedItems(new Set());
+      }
+      setCurrentStep(playbackStep);
+      if (simulationResult && playbackStep >= 0 && simulationResult.log[playbackStep]) {
+        const step = simulationResult.log[playbackStep];
+        setPlayerPosition(step.position);
+        setCollectedItems(computeCollected(playbackStep));
+      }
+    }
+  }, [playbackStep, currentStep, simulationResult, computeCollected, level.start]);
+
+  // 当关卡或模拟结果变化时重置
+  React.useEffect(() => {
+    setCurrentStep(-1);
+    setPlayerPosition({
+      x: level.start.x,
+      y: level.start.y,
+      facing: level.start.facing
+    });
+    setCollectedItems(new Set());
+  }, [level.start, level.width, level.height, simulationResult?.success]);
+
+  React.useEffect(() => {
+    onStepChange?.(currentStep);
+  }, [currentStep, onStepChange]);
 
   return (
     <div className="game-canvas-container">
@@ -265,33 +317,8 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
           font-weight: 500;
           box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-
-        .playback-controls {
-          margin-top: 12px;
-          display: flex;
-          gap: 8px;
-        }
-
-        .control-btn {
-          padding: 6px 12px;
-          border: none;
-          border-radius: 4px;
-          background: #2196f3;
-          color: white;
-          cursor: pointer;
-          font-size: 12px;
-        }
-
-        .control-btn:hover {
-          background: #1976d2;
-        }
-
-        .control-btn:disabled {
-          background: #ccc;
-          cursor: not-allowed;
-        }
       `}</style>
-      
+
       <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
@@ -313,38 +340,12 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
         <div className="info-item">
           ⭐ 收集: {collectedItems.size}/{level.tiles.filter(t => t.collectible).length}
         </div>
-        {simulationResult && (
+        {simulationResult && totalSteps > 0 && (
           <div className="info-item">
-            📊 步骤: {currentStep + 1}/{simulationResult.log.length}
+            📊 步进: {Math.max(currentStep + 1, 0)}/{totalSteps}
           </div>
         )}
       </div>
-
-      {simulationResult && simulationResult.log.length > 0 && (
-        <div className="playback-controls">
-          <button 
-            className="control-btn" 
-            onClick={resetToStart}
-            disabled={isPlaying}
-          >
-            🔄 重置
-          </button>
-          <button 
-            className="control-btn"
-            onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-            disabled={isPlaying || currentStep === 0}
-          >
-            ⏮️ 上一步
-          </button>
-          <button 
-            className="control-btn"
-            onClick={() => setCurrentStep(Math.min(simulationResult.log.length - 1, currentStep + 1))}
-            disabled={isPlaying || currentStep >= simulationResult.log.length - 1}
-          >
-            ⏭️ 下一步
-          </button>
-        </div>
-      )}
     </div>
   );
 };
