@@ -76,6 +76,8 @@ interface BlockEditorProps {
   onReset: () => void;
   allowedBlocks?: string[];
   onProgramChange?: (program: Instruction[]) => void;
+  showRunControls?: boolean;
+  externalResetSignal?: number;
 }
 
 const BLOCK_TYPES: BlockType[] = [
@@ -284,6 +286,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   onReset,
   allowedBlocks,
   onProgramChange,
+  showRunControls = true,
+  externalResetSignal,
 }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -333,6 +337,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     setResult(null);
     setError(null);
   }, [level.id]);
+
+  React.useEffect(() => {
+    if (typeof externalResetSignal === 'number') {
+      setProgramBlocks([]);
+      setSelectedPath(null);
+      setResult(null);
+      setError(null);
+    }
+  }, [externalResetSignal]);
 
   const addBlock = React.useCallback(
     (blockType: BlockType, parentPath?: BlockPath | null) => {
@@ -861,17 +874,25 @@ const overlayBlockType =
       <aside className="inspector">
         <section>
           <h4>运行控制</h4>
-          <button
-            type="button"
-            className="primary"
-            disabled={isRunning || programBlocks.length === 0}
-            onClick={handleRun}
-          >
-            🚀 运行程序
-          </button>
-          <button type="button" className="secondary" onClick={handleReset}>
-            🔄 重置
-          </button>
+          {showRunControls ? (
+            <>
+              <button
+                type="button"
+                className="primary"
+                disabled={isRunning || programBlocks.length === 0}
+                onClick={handleRun}
+              >
+                🚀 运行程序
+              </button>
+              <button type="button" className="secondary" onClick={handleReset}>
+                🔄 重置
+              </button>
+            </>
+          ) : (
+            <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '13px', lineHeight: 1.6 }}>
+              请使用页面右侧的控制面板来运行、重置或获取提示。
+            </p>
+          )}
           {error && <div className="error">{error}</div>}
         </section>
 
